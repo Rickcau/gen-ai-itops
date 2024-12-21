@@ -1,0 +1,14 @@
+{
+    "IsEncrypted": false,
+    "Values": {
+        "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+        "FUNCTIONS_WORKER_RUNTIME": "dotnet-isolated",
+        "ApiDeploymentName": "<APiDeployment>",
+        "ApiEndpoint": "<ApiEndpoint>",
+        "ApiKey": "<ApiKey>",
+        "AzureMapsApiKey":"<Azure Maps Key>",
+        "DatabaseConnection": "Server=tcp:<your_info>.database.windows.net,1433;Initial Catalog=<Your_Catalog>;Persist Security Info=False;User ID=<Your_UserId>;Password=<Your_Password>;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;",
+        "DatabaseDescription": "This DB contains tables with missing person related data",
+        "stggannettpoc_STORAGE": "DefaultEndpointsProtocol=https;AccountName=stggannettcw;AccountKey=<your account key>;EndpointSuffix=core.windows.net"
+    }
+}

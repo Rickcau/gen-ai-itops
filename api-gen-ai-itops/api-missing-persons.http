@@ -1,0 +1,6 @@
+@api_missing_persons_HostAddress = http://localhost:5205
+
+GET {{api_missing_persons_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
