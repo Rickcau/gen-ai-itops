@@ -8,9 +8,9 @@ using Azure.ResourceManager.Automation;
 using Azure.ResourceManager.Automation.Models;
 using System.Configuration;
 using Azure.ResourceManager.Resources;
-// using Models;
 using AzureAutomationLibrary;
-// RDC: This code is working fine as of 12/19/2024.
+
+// RDC: This code is working fine as of 12/21/2024.
 var config = new RunbookConfig
 {
     SubscriptionId = ConfigurationManager.AppSettings["AzureSubscriptionId"]

@@ -1,6 +1,8 @@
 ﻿using Azure.Core;
 using Azure.Identity;
 using System.IdentityModel.Tokens.Jwt;
+using AzureAutomationLibrary;
+using System.Configuration;
 
 // RDC: Work as of 12/20
 // Purpose:  This demostrates our ability to collect the role/permissions for a user that was authenticated using
@@ -9,6 +11,8 @@ using System.IdentityModel.Tokens.Jwt;
 // 1. Proper setup of the App Registration
 // 2. Custom Roles need to Created
 // 3. Assignment of Custom Roles to the users
+// This is an important concept to grasp, because you need to leverage the App Registeration to get a bearer token for the user
+// this credential (Token) will have the claims for the user and the permissions he or she can use.
 //
 // We will leverage these concepts for both the frontend and the backend API.
 // Now that we are able to demostrate the concept of getting the claims for a user
@@ -19,12 +23,40 @@ using System.IdentityModel.Tokens.Jwt;
 // 
 
 // Configuration
-const string ClientId = "e47b4848-430e-42c4-9bcc-e26a16c7faa0";
-const string TenantId = "0d8f4519-e72a-4019-8975-59754a33abb1";
-const string RedirectUri = "http://localhost";
+
+var ClientId = ConfigurationManager.AppSettings["GenAiAPIClientId"] 
+    ?? throw new ConfigurationErrorsException("GenAi API ClientId not found in config");
+var TenantId = ConfigurationManager.AppSettings["GenAiAPITenantId"]
+    ?? throw new ConfigurationErrorsException("GenAi API TenantId not found in config");
+var RedirectUri = ConfigurationManager.AppSettings["GenAiAPIRedirectUri"]
+    ?? throw new ConfigurationErrorsException("GenAi APIRedirect Uri TenantId not found in config");
+
+
+
+//const string ClientId = "e47b4848-430e-42c4-9bcc-e26a16c7faa0";
+//const string TenantId = "0d8f4519-e72a-4019-8975-59754a33abb1";
+//const string RedirectUri = "http://localhost";
+
+var config = new RunbookConfig
+{
+    SubscriptionId = ConfigurationManager.AppSettings["AzureSubscriptionId"]
+        ?? throw new ConfigurationErrorsException("AzureSubscriptionId not found in config"),
+    ResourceGroupName = ConfigurationManager.AppSettings["AzureAutomationResourceGroupName"]
+        ?? throw new ConfigurationErrorsException("AzureAutomationResourceGroupName not found in config"),
+    AutomationAccountName = ConfigurationManager.AppSettings["AzureAutomationAccountName"]
+        ?? throw new ConfigurationErrorsException("AzureAutomationAccountName not found in config"),
+    RunbookName = ConfigurationManager.AppSettings["AzureRunbookName"]
+        ?? throw new ConfigurationErrorsException("AzureRunbookName not found in config")
+};
 
 try
 {
+
+    //var credential = new InteractiveBrowserCredential(new InteractiveBrowserCredentialOptions
+    //{
+    //    TokenCachePersistenceOptions = new TokenCachePersistenceOptions()
+    //});
+
     var options = new InteractiveBrowserCredentialOptions
     {
         TenantId = TenantId,

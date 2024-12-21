@@ -11,6 +11,8 @@
   <ItemGroup>
     <PackageReference Include="Azure.Core" Version="1.44.1" />
     <PackageReference Include="Azure.Identity" Version="1.13.1" />
+    <PackageReference Include="Azure.ResourceManager" Version="1.13.0" />
+    <PackageReference Include="Azure.ResourceManager.Automation" Version="1.1.0" />
     <PackageReference Include="System.Configuration.ConfigurationManager" Version="9.0.0" />
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.3.0" />
   </ItemGroup>
