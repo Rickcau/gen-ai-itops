@@ -9,7 +9,7 @@
     <add key="AzureAutomationAccountName" value="Azure Automation Account Name" />
     <add key="AzureRunbookName" value="Azure Automation Runbook name to test" />
     <add key="AzureOpenAIEndpoint" value="AzureOpenAI-Endpoint-URI" />
-		<add key="AzureOpenAIKey" value="AzureOpenAI KEY" />  
-		<add key="AzureOpenAIModel" value="AzureOpenAI Model Name" />
+    <add key="AzureOpenAIKey" value="AzureOpenAI KEY" />
+    <add key="AzureOpenAIModel" value="AzureOpenAI Model Name" />
 	</appSettings>
 </configuration>
