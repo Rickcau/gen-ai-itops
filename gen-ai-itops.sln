@@ -13,7 +13,21 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ConsoleApp-Az-Check-Permissions", "ConsoleApp-Az-Check-Permissions\ConsoleApp-Az-Check-Permissions.csproj", "{C6D09F91-724E-4A79-93F3-684A8D9C3478}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "api-gen-ai-itops", "api-gen-ai-itops\api-gen-ai-itops.csproj", "{A5A1E274-9F7B-4DD3-9D8A-C7BBE338BF7B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "api-gen-ai-itops", "api-gen-ai-itops\api-gen-ai-itops.csproj", "{A5A1E274-9F7B-4DD3-9D8A-C7BBE338BF7B}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "scripts", "scripts", "{DC48369E-A45D-4678-8EFC-4FF1903F1D31}"
+	ProjectSection(SolutionItems) = preProject
+		scripts\EnumRunbooks.ps1 = scripts\EnumRunbooks.ps1
+		scripts\README.md = scripts\README.md
+		scripts\Test-VM-Script.ps1 = scripts\Test-VM-Script.ps1
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "notes", "notes", "{EBE5962E-565B-4C2F-B94E-9470202CF381}"
+	ProjectSection(SolutionItems) = preProject
+		notes\ImportantNotes.md = notes\ImportantNotes.md
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConsoleApp-Build-Ai-Index", "ConsoleApp-Build-Ai-Index\ConsoleApp-Build-Ai-Index.csproj", "{A1823B48-8FD8-47E1-A4E3-331286E8C5D4}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -33,6 +47,10 @@ Global
 		{A5A1E274-9F7B-4DD3-9D8A-C7BBE338BF7B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A5A1E274-9F7B-4DD3-9D8A-C7BBE338BF7B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A5A1E274-9F7B-4DD3-9D8A-C7BBE338BF7B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A1823B48-8FD8-47E1-A4E3-331286E8C5D4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A1823B48-8FD8-47E1-A4E3-331286E8C5D4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A1823B48-8FD8-47E1-A4E3-331286E8C5D4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A1823B48-8FD8-47E1-A4E3-331286E8C5D4}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

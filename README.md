@@ -3,6 +3,12 @@ This solution will leverage Azure Automation and Runbooks for all Operations alo
 
 We will leverage Azure RBAC custom roles to define the various operations/actions that users can perform.  Each user will be assigned to the specific Roles and this will determine which operations they can perform.
 
+# Simplicity vs. Overengineering:
+
+For small sets of runbooks, a well-structured JSON in version control might be enough. It is simpler and lower cost.
+For large sets or advanced discovery (“Find all runbooks that manage Azure VMs in West US 2”), leveraging Azure AI Search to power “natural language” queries is extremely useful.
+
+
 ## Setup Azure Automation
 [Please review the instructions in the this document](./RunBooks.md).
 

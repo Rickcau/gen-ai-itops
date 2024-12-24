@@ -72,3 +72,66 @@ Check the output to verify it can list your VMs
 - "Automation Contributor" (full access to manage automation resources)
 
 For testing purposes I normally add this at the subscription level for the account I am using to start the jobs.  Normally, you would likely use a managed identity for this.
+
+# Powershell Script - EnumRunbooks.ps1
+This script is designed to help you build a local JSON file that has all your runbook operations which will be exposed to the model for use.
+
+For example purposes we will use a Local JSON file for the Runbook details and this will be injected into LLM so it has knowledge of what is availble.  As you list of Runbooks grow, 
+
+# Simplicity vs. Overengineering:
+
+For small sets of runbooks, a well-structured JSON in version control might be enough. It is simpler and lower cost.
+For large sets or advanced discovery (“Find all runbooks that manage Azure VMs in West US 2”), leveraging Azure AI Search to power “natural language” queries is extremely useful.
+
+# Use a consistent metadata pattern for all scripts
+By using a consistent metadata pattern in each of the run books, we our PowerShell script will be able to extract the necessary data needed for out LLM to use.  When
+you scale up and have hundreds of runbooks, it would be recommended that you leverage something like AI Search to create embeddings for these scripts so they can be 
+dynamically retrieved at run time.
+
+If yoru script does not requirement parameters simply don't include the .PARAMETER sections in the metadata.  Using this approach allows us to extract what we need for
+indexing purposes or for the building of a JSON file that can be used to inject details about the available operations that can be performed.
+
+
+```
+    <#
+        .SYNOPSIS
+            Shuts down an Azure Virtual Machine using Managed Identity authentication.
+
+        .DESCRIPTION
+            This runbook safely stops a specified Azure Virtual Machine in a given resource group.
+            It uses the Automation Account's Managed Identity for authentication and includes
+            validation and error handling. The script checks the VM's existence and current
+            power state before attempting shutdown.
+
+        .METADATA
+            AUTHOR: Rick Caudle
+            LASTEDIT: December 19, 2024
+            VERSION: 1.0.0
+            CATEGORY: Operations
+            TAGS: VM, PowerManagement, Shutdown
+            DEPENDENCIES: Az.Accounts, Az.Compute
+
+        .PARAMETER 
+            Name: VNName
+            Description: The name of the Virtual Machine to shut down
+            Required: Yes
+            Type: string
+            Default: None
+
+        .PARAMETER 
+            Name: ResourceGroup
+            Description: The resource group containing the Virtual Machine
+            Required: Yes
+            Type: string
+            Default: None
+
+        .NOTES
+            - Requires a Managed Identity configured on the Automation Account
+            - Managed Identity must have Contributor or VM Contributor rights on the VM
+            - Performs a graceful shutdown, equivalent to "shutdown" from the OS
+            - Waits for confirmation of shutdown before completing
+
+        .EXAMPLE
+            .\ShutDown-VM.ps1 -VMName "MyVM" -ResourceGroupName "MyRG"
+    #>
+```
