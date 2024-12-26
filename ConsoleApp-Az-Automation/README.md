@@ -14,7 +14,7 @@ We are not using the API Application Registration for this.
   Automation Operator
 ```
 
-Keep in mind that we are not using the App Registeration we will do that in the **ConsoleApp-Az-Check-Permissions** example.
+Keep in mind that we are not using the App Registeration in this example, we will do that in the **ConsoleApp-Az-Check-Permissions** example.
 
 If you do not do this and you run the Console App, and you authenticate with a user that does not have these Roles at the Subscription level you will not
 be able to start the Runbook.
