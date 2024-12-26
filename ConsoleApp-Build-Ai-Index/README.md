@@ -19,9 +19,13 @@ Azure OpenAI Search Helper
 #### Examples:
   
   ConsoleApp-Build-Ai-Index **--create**
+  
   ConsoleApp-Build-Ai-Index **--load**
+  
   ConsoleApp-Build-Ai-Index **--create --load**
+  
   ConsoleApp-Build-Ai-Index **--search** "List VMs"
+  
   ConsoleApp-Build-Ai-Index **--delete**=
 
 ## Next Steps
