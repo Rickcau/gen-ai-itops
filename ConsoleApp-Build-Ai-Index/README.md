@@ -8,15 +8,19 @@ Azure OpenAI Search Helper
  ConsoleApp-Build-Ai-Index **[options]**
 
 #### Options:
-   
-   ```
+
       **--create**           Create the search index
+      
       **--load**             Generate and load documents into the index
+      
       **--search <search>** Perform a search with the specified query
+      
       **--delete**          Delete the search index
+      
       **--version**          Show version information
+      
       **-?, -h, --help**     Show help and usage information
-   ```
+
 
 #### Examples:
   
