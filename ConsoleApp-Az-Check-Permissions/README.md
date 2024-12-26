@@ -3,3 +3,5 @@ This Console App demonstrates how we can use Easy Authentication to authenticate
 
 It's important to understand these concepts because they will be used for the frontend and the backend API.  
 
+Now taht we hav
+
