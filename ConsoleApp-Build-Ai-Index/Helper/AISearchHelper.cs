@@ -40,6 +40,28 @@ namespace AzureOpenAISearchHelper
             return new SearchIndexClient(new Uri(configuration.SearchServiceEndpoint!), defaultCredential);
         }
 
+        public async Task DeleteIndexAsync(Configuration configuration, SearchIndexClient indexClient)
+        {
+            try
+            {
+                Console.WriteLine($"Attempting to delete index: {configuration.IndexName}");
+                await indexClient.DeleteIndexAsync(configuration.IndexName);
+                Console.WriteLine($"Successfully deleted index: {configuration.IndexName}");
+            }
+            catch (RequestFailedException ex)
+            {
+                if (ex.Status == 404)
+                {
+                    Console.WriteLine($"Index {configuration.IndexName} does not exist.");
+                }
+                else
+                {
+                    Console.WriteLine($"Error deleting index: {ex.Message}");
+                    throw;
+                }
+            }
+        }
+
         public async Task SetupIndexAsync(Configuration configuration, SearchIndexClient indexClient)
         {
             const string vectorSearchHnswProfile = "my-vector-profile";
@@ -203,21 +225,6 @@ namespace AzureOpenAISearchHelper
 
         }
 
-        private async Task<List<RunbookData>> LoadRunbooksFromJson2Async(string path)
-        {
-            if (!File.Exists(path))
-            {
-                Console.WriteLine($"File not found: {path}");
-                return new List<RunbookData>();
-            }
-
-            string jsonContent = await File.ReadAllTextAsync(path);
-            return JsonSerializer.Deserialize<List<RunbookData>>(jsonContent, new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true
-            }) ?? new List<RunbookData>();
-        }
-
         private List<RunbookData> LoadRunbooksFromJson(string jsonFilePath)
         {
             var jsonContent = File.ReadAllText(jsonFilePath);
@@ -231,6 +238,92 @@ namespace AzureOpenAISearchHelper
 
             return JsonSerializer.Deserialize<List<RunbookData>>(jsonContent, options) ?? new List<RunbookData>();
         }
+
+        public async Task Search(SearchClient searchClient, string query, int k = 50, int top = 3, string? filter = null, bool textOnly = false, bool exhaustive = false, bool hybrid = false, bool semantic = false, string debug = "disabled", double minRerankerScore = 2.0)
+        {
+            // Perform the vector similarity search  
+            var searchOptions = new SearchOptions
+            {
+                Filter = filter,
+                Size = top,
+                Select = { "name", "id", "description", },
+                HighlightFields = { "name" },
+                IncludeTotalCount = true
+            };
+            if (!textOnly)
+            {
+                searchOptions.VectorSearch = new()
+                {
+                    Queries = {
+                        new VectorizableTextQuery(text: query)
+                        {
+                            KNearestNeighborsCount = k,
+                            Fields = { "descriptionVector" },
+                            Exhaustive = exhaustive
+                        },
+                    },
+
+                };
+            }
+            if (semantic)
+            {
+                searchOptions.QueryType = SearchQueryType.Semantic;
+                searchOptions.SemanticSearch = new SemanticSearchOptions
+                {
+                    SemanticConfigurationName = "my-semantic-config",
+                    QueryCaption = new QueryCaption(QueryCaptionType.Extractive),
+                    QueryAnswer = new QueryAnswer(QueryAnswerType.Extractive),
+                };
+            }
+            //if (!string.IsNullOrEmpty(debug) && debug != "disabled")
+            //{
+            //    if (!semantic)
+            //    {
+            //        searchOptions.SemanticSearch = new SemanticSearchOptions();
+            //    }
+            //    searchOptions.SemanticSearch.Debug = new QueryDebugMode(debug);
+            //}
+            string? queryText = (textOnly || hybrid || semantic) ? query : null;
+            SearchResults<SearchDocument> response = await searchClient.SearchAsync<SearchDocument>(queryText, searchOptions);
+
+            if (response.SemanticSearch?.Answers?.Count > 0)
+            {
+                Console.WriteLine("\nQuery Answers:");
+                foreach (QueryAnswerResult answer in response.SemanticSearch.Answers)
+                {
+                    Console.WriteLine($"Answer Highlights: {answer.Highlights}");
+                    Console.WriteLine($"Answer Text: {answer.Text}");
+                    Console.WriteLine();
+                }
+            }
+
+            await foreach (SearchResult<SearchDocument> result in response.GetResultsAsync())
+            {
+                // Only process results that meet the minimum reranker score
+                if (result.SemanticSearch?.RerankerScore >= minRerankerScore)
+                {
+
+                    Console.WriteLine($"Name: {result.Document["name"]}");
+                    Console.WriteLine($"Score: {result.Score}");
+                    Console.WriteLine($"Reranker Score: {result.SemanticSearch!.RerankerScore}\n");
+                    var truncatedDescription = result.Document["description"] != null && result?.Document?["description"]?.ToString()?.Length > 20
+                        ? result.Document["description"]?.ToString()?.Substring(0, 20)
+                        : result!.Document["description"];
+                    Console.WriteLine($"Description: {truncatedDescription}\n");
+                    Console.WriteLine();
+
+                    if (result.SemanticSearch?.Captions?.Count > 0)
+                    {
+                        QueryCaptionResult firstCaption = result.SemanticSearch.Captions[0];
+                        Console.WriteLine($"First Caption Highlights: {firstCaption.Highlights}");
+                        Console.WriteLine($"First Caption Text: {firstCaption.Text}");
+                        Console.WriteLine();
+                    }
+                }
+            }
+            Console.WriteLine($"Total Results: {response.TotalCount}");
+        }
+
 
     }
 }

@@ -109,23 +109,6 @@ namespace Runbook.Models
             }
         }
     }
-    public class RunbookParameter
-    {
-        [JsonPropertyName("required")]
-        public bool Required { get; set; }
-
-        [JsonPropertyName("type")]
-        public string? Type { get; set; }
-
-        [JsonPropertyName("description")]
-        public string? Description { get; set; }
-
-        [JsonPropertyName("default")]
-        public string? Default { get; set; }
-
-        [JsonPropertyName("name")]
-        public string? Name { get; set; }
-    }
 }
 
 

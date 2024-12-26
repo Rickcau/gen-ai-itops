@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "ConsoleApp-Build-Ai-Index": {
+      "commandName": "Project",
+      "commandLineArgs": "--search \"List VMs for me\""
+    }
+  }
+}

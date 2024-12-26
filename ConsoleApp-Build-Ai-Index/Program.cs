@@ -1,532 +1,269 @@
-﻿using System;
-using System.Text.Json;
-using System.Text.Json.Serialization;
-using Azure;
-using Azure.Identity;
-using Azure.AI.OpenAI;  // for EmbeddingsOptions
-using Azure.Search.Documents;
-using Azure.Search.Documents.Indexes;
-using Azure.Search.Documents.Indexes.Models;
-using Azure.Search.Documents.Models;
-using OpenAI;
-using OpenAI.Embeddings;
-using AzureOpenAISearchConfiguration;
-using Microsoft.Extensions.Configuration;
-using AzureOpenAISearchHelper;
+﻿//using System;
+//using System.Text.Json;
+//using System.Text.Json.Serialization;
+//using Azure;
+//using Azure.Identity;
+//using Azure.AI.OpenAI;  // for EmbeddingsOptions
+//using Azure.Search.Documents;
+//using Azure.Search.Documents.Indexes;
+//using Azure.Search.Documents.Indexes.Models;
+//using Azure.Search.Documents.Models;
+//using OpenAI;
+//using OpenAI.Embeddings;
+//using AzureOpenAISearchConfiguration;
+//using Microsoft.Extensions.Configuration;
+//using AzureOpenAISearchHelper;
+//using System.Runtime.CompilerServices;
+//using System.CommandLine;
 
-// using Azure.Search.Documents.Models;
-
-// IMPORTANT:
-//  - If your "AzureOpenAIClient" class or "EmbeddingsOptions" class
-//    come from a custom or different namespace, be sure to adjust
-//    these using statements accordingly.
-
-
-// Create the Configuration Object - a helper class to help us with the environment variables needed.
-var configuration = new Configuration();
-var aiSearchHelper = new AISearchHelper();
-new ConfigurationBuilder()
-              .SetBasePath(Directory.GetCurrentDirectory())
-              .AddEnvironmentVariables()
-              .AddJsonFile("local.settings.json")
-              .Build()
-              .Bind(configuration);
-
-configuration.Validate();
-
-var defaultCredential = new DefaultAzureCredential();
-var azureOpenAIClient = aiSearchHelper.InitializeOpenAIClient(configuration, defaultCredential);
-var indexClient = aiSearchHelper.InitializeSearchIndexClient(configuration, defaultCredential);
-var searchClient = indexClient.GetSearchClient(configuration.IndexName);
-await aiSearchHelper.SetupIndexAsync(configuration,indexClient);
-try
-{
-    await aiSearchHelper.GenerateAndSaveRunBookDocumentsAsync(configuration, azureOpenAIClient, searchClient, $@"C:\temp\runbooks.json");
-}
-catch (Exception ex)
-{
-    Console.WriteLine(ex.ToString());
-}
+//// RDC: 12/24/2024 - Working well.
+//// If you plan to run this from the UI via Start Debug, you will need to create a debug provide and make sure to pass
+//// in the two arguments.
+////
+//// Usage: appname <buildindex> <search>
+//// Example: appname true false   <- this will result in only the index being built
 
 
-
-// var azureOpenAIClient = InitializeOpenAIClient(configuration, defaultCredential);
-//var indexClient = InitializeSearchIndexClient(configuration, defaultCredential);
-//var searchClient = indexClient.GetSearchClient(configuration.IndexName);
-
-// --- Constants / Configuration ---
-//var openAiEndpoint = "https://YourOpenAIEndpoint.openai.azure.com/";
-//var openAiKey = "YourOpenAIKey";
-//var openAiDeploymentOrModel = "text-embedding-ada-002";
-
-//var searchServiceEndpoint = "https://YourSearchServiceName.search.windows.net";
-//var searchApiKey = "YourSearchApiKey";
-//var indexName = "runbooks-index";
-
-//// Path to your JSON file
-//var jsonFilePath = "runbooks.json";
-
-//// 1) Load data from JSON
-//Console.WriteLine("Loading runbooks from JSON...");
-//var runbooks = await LoadRunbooksFromJsonAsync(jsonFilePath);
-//if (runbooks is null || runbooks.Count == 0)
+//// First lets check to make sure some arguments were passed in before we do anything else
+//if (args.Length != 2)
 //{
-//    Console.WriteLine("No data found in JSON.");
+//    Console.WriteLine("Error: Please provide exactly two arguments: buildindex and search.");
+//    Console.WriteLine("Usage: appname <buildindex> <search>");
+//    Console.WriteLine("Example: appname true false");
 //    return;
 //}
 
-// 2) Create the AzureOpenAIClient
-//    Note: This constructor signature must match your custom client.
-//var openAiClient = new AzureOpenAIClient(
-//    new Uri(openAiEndpoint), 
-//    new AzureKeyCredential(openAiKey)
-//);
+//// Create the Configuration Object - a helper class to help us with the environment variables needed.
+//// Create our aiSearchHelper object which will be used to create the index and perform searchers
+//var configuration = new Configuration();
+//var aiSearchHelper = new AISearchHelper();
+//new ConfigurationBuilder()
+//              .SetBasePath(Directory.GetCurrentDirectory())
+//              .AddEnvironmentVariables()
+//              .AddJsonFile("local.settings.json")
+//              .Build()
+//              .Bind(configuration);
 
-//// 3) Generate embeddings for each runbook
-//Console.WriteLine("Generating embeddings using AzureOpenAIClient...");
-//foreach (var runbook in runbooks)
+//configuration.Validate();
+
+//// Let's aquire credentials using DefaultAzureCredential() then lets create instances of everything we will need.
+//var defaultCredential = new DefaultAzureCredential();
+//var azureOpenAIClient = aiSearchHelper.InitializeOpenAIClient(configuration, defaultCredential);
+//var indexClient = aiSearchHelper.InitializeSearchIndexClient(configuration, defaultCredential);
+//var searchClient = indexClient.GetSearchClient(configuration.IndexName);
+//// await aiSearchHelper.SetupIndexAsync(configuration, indexClient);
+
+
+
+
+//// Parse the arguments
+//string buildIndexArg = args[0].ToLower();
+//string searchArg = args[1].ToLower();
+
+//Console.WriteLine($"Build Index = {buildIndexArg}");
+//Console.WriteLine($"Search = {searchArg}");
+
+//if (Boolean.Parse(buildIndexArg) && !Boolean.Parse(searchArg))
 //{
-//    string textForEmbedding = $"Name: {runbook.Name ?? ""}, Description: {runbook.Description ?? ""}";
-
-//    if (string.IsNullOrWhiteSpace(textForEmbedding))
+//    Console.WriteLine("Building the index only...");
+//    try
 //    {
-//        runbook.DescriptionVector = Array.Empty<float>();
-//        continue;
+//        await aiSearchHelper.SetupIndexAsync(configuration, indexClient);
+//        await aiSearchHelper.GenerateAndSaveRunBookDocumentsAsync(configuration, azureOpenAIClient, searchClient, $@"C:\temp\runbooks.json");
+
 //    }
-
-  
-
-//    // Call your custom method to get embeddings
-//    // If your AzureOpenAIClient uses a different signature, adjust accordingly.
-//    var embeddingClient = openAiClient.GetEmbeddingClient(openAiDeploymentOrModel);
-
-//    var embeddingResponse = await embeddingClient.GenerateEmbeddingAsync(textForEmbedding);
-//    IReadOnlyList<float> embeddingVector = (IReadOnlyList<float>)embeddingResponse.Value;
-
-
-//    // Store the embedding in DescriptionVector
-//    runbook.DescriptionVector = embeddingVector.ToArray();
-//}
-
-//// 4) Create or update the Azure Cognitive Search index
-//Console.WriteLine($"Creating or updating index '{indexName}'...");
-//await CreateOrUpdateIndexAsync(indexName, searchServiceEndpoint, searchApiKey);
-
-//// 5) Upload the runbooks to the index
-//Console.WriteLine("Uploading runbooks to the index...");
-//await UploadRunbooksAsync(runbooks, indexName, searchServiceEndpoint, searchApiKey);
-
-//Console.WriteLine("Done! Press any key to exit.");
-//Console.ReadKey();
-
-//static AzureOpenAIClient InitializeOpenAIClient(Configuration configuration, DefaultAzureCredential defaultCredential)
-//{
-//    if (!string.IsNullOrEmpty(configuration.AzureOpenAIApiKey))
+//    catch (Exception ex)
 //    {
-//        return new AzureOpenAIClient(new Uri(configuration.AzureOpenAIEndpoint!), new AzureKeyCredential(configuration.AzureOpenAIApiKey));
+//        Console.WriteLine(ex.ToString());
 //    }
-
-//    return new AzureOpenAIClient(new Uri(configuration.AzureOpenAIEndpoint!), defaultCredential);
 //}
-
-//static SearchIndexClient InitializeSearchIndexClient(Configuration configuration, DefaultAzureCredential defaultCredential)
+//else if (Boolean.Parse(searchArg) && !Boolean.Parse(buildIndexArg))
 //{
-//    if (!string.IsNullOrEmpty(configuration.SearchAdminKey))
+//    Console.WriteLine("Performing a Search only...");
+//    try
 //    {
-//        return new SearchIndexClient(new Uri(configuration.SearchServiceEndpoint!), new AzureKeyCredential(configuration.SearchAdminKey));
+//        await aiSearchHelper.Search(searchClient, "Start a VM for me", semantic: true, hybrid: true);
+
 //    }
-
-//    return new SearchIndexClient(new Uri(configuration.SearchServiceEndpoint!), defaultCredential);
-//}
-
-//static async Task SetupIndexAsync(Configuration configuration, SearchIndexClient indexClient)
-//{
-//    const string vectorSearchHnswProfile = "my-vector-profile";
-//    const string vectorSearchHnswConfig = "myHnsw";
-//    const string vectorSearchVectorizer = "myOpenAIVectorizer";
-//    const string semanticSearchConfig = "my-semantic-config";
-
-//    SearchIndex searchIndex = new(configuration.IndexName)
+//    catch (Exception ex)
 //    {
-//        VectorSearch = new()
-//        {
-//            Profiles =
-//                    {
-//                        new VectorSearchProfile(vectorSearchHnswProfile, vectorSearchHnswConfig)
-//                        {
-//                            VectorizerName = vectorSearchVectorizer
-//                        }
-//                    },
-//            Algorithms =
-//                    {
-//                        new HnswAlgorithmConfiguration(vectorSearchHnswConfig)
-//                        {
-//                            Parameters = new HnswParameters
-//                            {
-//                                M = 4,
-//                                EfConstruction = 400,
-//                                EfSearch = 500,
-//                                Metric = "cosine"
-//                            }
-//                        }
-//                    },
-//            Vectorizers =
-//                    {
-//                        new AzureOpenAIVectorizer(vectorSearchVectorizer)
-//                        {
-//                            Parameters = new AzureOpenAIVectorizerParameters
-//                            {
-//                                ResourceUri = new Uri(configuration.AzureOpenAIEndpoint !),
-//                                ModelName = configuration.AzureOpenAIEmbeddingModel,
-//                                DeploymentName = configuration.AzureOpenAIEmbeddingDeployment
-//                            }
-//                        }
-//                    }
-//        },
-//        SemanticSearch = new()
-//        {
-//            Configurations =
-//                        {
-//                           new SemanticConfiguration(semanticSearchConfig, new()
-//                           {
-//                                TitleField = new SemanticField("name"),
-//                                ContentFields =
-//                                {
-//                                    new SemanticField("description")
-//                                },
-//                                KeywordsFields =
-//                                {
-//                                    new SemanticField("category"),
-//                                    new SemanticField("tags")
-//                                }
-//                           })
-
-//                    },
-//        },
-//        Fields =
-//            {
-//                new SimpleField("id", SearchFieldDataType.String) { IsKey = true, IsFilterable = true, IsSortable = true, IsFacetable = true },
-//                new SearchableField("name") { IsFilterable = true, IsSortable = true },
-//                new SearchableField("description") { IsFilterable = true },
-//                new SimpleField("parameters", SearchFieldDataType.String) { IsFilterable = false },
-//                new SearchableField("notes") { IsFilterable = true },
-//                new SimpleField("tags", SearchFieldDataType.String) { IsFilterable = false },
-//                new SearchableField("category") { IsFilterable = true },
-//                new SimpleField("author", SearchFieldDataType.String) { IsFilterable = false },
-//                new SimpleField("lastEdit", SearchFieldDataType.String) { IsFilterable = false },
-//                new SimpleField("synopsis", SearchFieldDataType.String) { IsFilterable = false },
-//                new SimpleField("version", SearchFieldDataType.String) { IsFilterable = false },
-//                new SimpleField("dependencies", SearchFieldDataType.String) { IsFilterable = false },
-//                new SearchField("descriptionVector", SearchFieldDataType.Collection(SearchFieldDataType.Single))
-//                {
-//                    IsSearchable = true,
-//                    VectorSearchDimensions = int.Parse(configuration.AzureOpenAIEmbeddingDimensions!),
-//                    VectorSearchProfileName = vectorSearchHnswProfile
-//                }
-//            }
-//    };
-
-//    await indexClient.CreateOrUpdateIndexAsync(searchIndex);
-//}
-
-
-
-// -------------------- Local Functions --------------------
-//async Task<List<RunbookData>> LoadRunbooksFromJsonAsync(string path)
-//{
-//    if (!File.Exists(path))
-//    {
-//        Console.WriteLine($"File not found: {path}");
-//        return new List<RunbookData>();
+//        Console.WriteLine(ex.ToString());
 //    }
-
-//    string jsonContent = await File.ReadAllTextAsync(path);
-//    return JsonSerializer.Deserialize<List<RunbookData>>(jsonContent, new JsonSerializerOptions
-//    {
-//        PropertyNameCaseInsensitive = true
-//    }) ?? new List<RunbookData>();
 //}
-
-//async Task CreateOrUpdateIndexAsync(string idxName, string searchEndpoint, string apiKey)
+//else if (Boolean.Parse(searchArg) && Boolean.Parse(buildIndexArg))
 //{
-//    const string vectorSearchHnswProfile = "myHnswProfile";
-//    const string vectorSearchHnswConfig = "myHnsw";
-//    const string vectorSearchVectorizer = "myOpenAIVectorizer";
-//    const string semanticSearchConfig = "my-semantic-config";
-
-//    var indexClient = new SearchIndexClient(new Uri(searchEndpoint), new AzureKeyCredential(apiKey));
-
-//    var fields = new List<SearchField>
+//    Console.WriteLine("Building Index then... Performing a Search...");
+//    try
 //    {
-//        // 'name' field - unique identifier
-//        new SimpleField("id", SearchFieldDataType.String)
+//        await aiSearchHelper.SetupIndexAsync(configuration, indexClient);
+//        await aiSearchHelper.GenerateAndSaveRunBookDocumentsAsync(configuration, azureOpenAIClient, searchClient, $@"C:\temp\runbooks.json");
+//        Console.WriteLine("\nLet's give the index time to finish it's background work.");
+//        var startTime = DateTime.Now;
+//        while ((DateTime.Now - startTime).TotalSeconds < 5)
 //        {
-//            IsKey = true,
-//            IsFilterable = true
-//        },
-//        new SearchField("name", SearchFieldDataType.String)
-//        {
-//            IsFilterable = true,
-//            IsSortable = true,
-//        },
-//        new SearchField("description", SearchFieldDataType.String)
-//        {
-//            IsFilterable = true
-//        },
-//        new SimpleField("parameters", SearchFieldDataType.String)
-//        {
-//            IsFilterable = false
-//        },
-//        new SearchField("notes", SearchFieldDataType.String)
-//        {
-//            IsFilterable = false
-//        },
-//        new SimpleField("tags", SearchFieldDataType.String)
-//        {
-//            IsFilterable = true ,
-//        },
-//        new SearchField("category", SearchFieldDataType.String)
-//        {
-//            IsFilterable = true
-//        },
-//        new SimpleField("author", SearchFieldDataType.String)
-//        {
-//            IsFilterable = false ,
-//        },
-//        new SimpleField("lastEdit", SearchFieldDataType.String)
-//        {
-//            IsFilterable = false ,
-//        },
-//        new SimpleField("synipsis", SearchFieldDataType.String)
-//        {
-//            IsFilterable = false ,
-//        },
-//        new SimpleField("version", SearchFieldDataType.String)
-//        {
-//            IsFilterable = false ,
-//        },
-//        new SimpleField("dependencies", SearchFieldDataType.String)
-//        {
-//            IsFilterable = false ,
-//        },
-//        // Vector field 'descriptionVector'
-//        new SearchField("descriptionVector", SearchFieldDataType.Collection(SearchFieldDataType.Single))
-//        {
-//            IsFilterable = false,
-//            IsSortable = false,
-//            IsFacetable = false,
-//            IsSearchable = false,
-
-//            // Vector-specific properties
-//            VectorSearchDimensions = 1536,              // Must match your embedding model (e.g., text-embedding-ada-002)
-//            VectorSearchProfileName = "myHnswProfile"    // Must match your vector search profile name
+//            Console.Write(".");
+//            Thread.Sleep(200); // Add small delay between dots to avoid flooding
 //        }
-//    };
-
-    // Define Vector Search Configuration
-    //var vectorSearch = new VectorSearch
-    //{
-    //    Algorithms = new List<HnswAlgorithmConfiguration>
-    //    {
-    //        new HnswAlgorithmConfiguration
-    //        {
-    //            Name = "my-vector-config",
-    //            Kind = "hnsw",
-    //            Parameters = new Dictionary<string, object>
-    //            {
-    //                { "m", 4 },
-    //                { "efConstruction", 400 },
-    //                { "efSearch", 500 },
-    //                { "metric", "cosine" }
-    //            }
-    //        }
-    //    }
-    //};
-
-
-    //var vectorSearch = new VectorSearch
-    //{
-    //    Algorithms =
-    //            {
-    //                new HnswAlgorithmConfiguration("myHnsw")
-    //                {
-    //                    name
-    //                    // HNSW Parameters
-    //                    m = 4,
-    //                    EfConstruction = 400,
-    //                    EfSearch = 500,
-    //                    SimilarityMetric = "cosine" // Options: "cosine", "dotProduct", "euclidean"
-    //                }
-    //            },
-    //    Profiles =
-    //            {
-    //                new VectorSearchProfile("myHnswProfile")
-    //                {
-    //                    AlgorithmConfiguration = "myHnsw"
-    //                }
-    //            }
-    //};
-
-    // Define Semantic Configuration
-    //var semanticConfig = new SemanticConfiguration("default",
-    //    new SemanticPrioritizedFields
-    //    {
-    //        TitleField = new SemanticField("vendorName"),
-    //        KeywordsFields = { new SemanticField("contractTitle"), new SemanticField("clientName") },
-    //        ContentFields = { new SemanticField("content") }
-    //    }
-    //);
-
-    //var semanticSearch = new SemanticSearch
-    //{
-    //    Configurations = { semanticConfig }
-    //};
-
-    //// Create the SearchIndex with fields, vector search, and semantic search
-    //var indexDefinition = new SearchIndex(indexName, fields)
-    //{
-    //    VectorSearch = vectorSearch,
-    //    SemanticSearch = semanticSearch
-    //};
-    // Vector field 'descriptionVector'
-    //new SearchField("descriptionVector", SearchFieldDataType.Collection(SearchFieldDataType.Single))
-    //{
-    //    IsFilterable = false,
-    //    IsSortable = false,
-    //    IsFacetable = false,
-    //    IsSearchable = false,
-
-    //    // Vector-specific properties
-    //    VectorSearchDimensions = 1536,              // Must match your embedding model (e.g., text-embedding-ada-002)
-    //    VectorSearchProfileName = "myHnswProfile"    // Must match your vector search profile name
-    //}
-
-
-    //// Use reflection-based FieldBuilder to generate fields for RunbookData
-    //var fields = new FieldBuilder().Build(typeof(RunbookData));
-
-    //// Remove any existing auto-detected field for "descriptionVector"
-    //fields.RemoveAll(f => f.Name.Equals("descriptionVector", StringComparison.OrdinalIgnoreCase));
-
-    //// Create a vector field for the embeddings
-    //var vectorField = new SearchField(
-    //    name: "descriptionVector",
-    //    type: SearchFieldDataType.Collection(SearchFieldDataType.Single))
-    //    {
-    //        // Optional typical field settings
-    //        IsFilterable = false,
-    //        IsSortable = false,
-    //        IsFacetable = false,
-    //        IsSearchable = false,
-
-    //        // Vector-specific properties
-    //        VectorSearchDimensions = 1536,              // Must match your embedding model
-    //        VectorSearchProfileName = "myHnswProfile" // Must match your configured vector search profile
-    //    };
-
-    //fields.Add(vectorField);
-
-    //var semanticConfig = new SemanticConfiguration("default",
-    //            new SemanticPrioritizedFields
-    //            {
-    //                TitleField = new SemanticField("descriptionVector"),
-    //                KeywordsFields = { "contractTitle", "clientName" },
-    //                ContentFields = { "content" }
-    //            }
-    //        );
-
-    //var semanticSearch = new SemanticSearch
-    //{
-    //    Configurations = { semanticConfig }
-    //};
-
-    //// Create the search index definition
-    //var definition = new SearchIndex(idxName, fields)
-    //{
-    //    // Add vector search configuration
-    //    VectorSearch = new VectorSearch,
-    //    SemanticSearch = semanticSearch
-    //};
-
-    //// If you want 'name' as primary key (assuming it's unique)
-    //definition.Fields["name"].IsKey = true;
-
-    // Create or update the index
-    //await indexClient.CreateOrUpdateIndexAsync(definition);
+//        Console.WriteLine(); // Add newline at the end
+//        await aiSearchHelper.Search(searchClient, "Start a VM for me", semantic: true, hybrid: true);
+//    }
+//    catch (Exception ex)
+//    {
+//        Console.WriteLine(ex.ToString());
+//    }
 //}
 
 
 
-//async Task UploadRunbooksAsync(
-//    List<RunbookData> runbooks,
-//    string idxName,
-//    string searchEndpoint,
-//    string apiKey)
-//{
-//    var searchClient = new SearchClient(new Uri(searchEndpoint), idxName, new AzureKeyCredential(apiKey));
+////try
+////{
+////    await aiSearchHelper.GenerateAndSaveRunBookDocumentsAsync(configuration, azureOpenAIClient, searchClient, $@"C:\temp\runbooks.json");
+////    Task.Delay(5000).Wait();
+////    await aiSearchHelper.Search(searchClient, "Start a VM for me", semantic: true, hybrid: true);
+////}
+////catch (Exception ex)
+////{
+////    Console.WriteLine(ex.ToString());
+////}
 
-//    // Upload or merge the documents
-//    var batch = IndexDocumentsBatch.Upload(runbooks);
-//    await searchClient.IndexDocumentsAsync(batch);
-//}
+////async Task CreateIndexAsync(AISearchHelper aisearchhelper)
+////{
+////    await aisearchhelper.SetupIndexAsync(configuration, indexClient);
+////}
+////async Task BuildIndex()
+////{
 
-// -------------------- Data Models --------------------
-//public class RunbookData
-//{
-//    [JsonPropertyName("tags")]
-//    public List<string>? Tags { get; set; }
+////}
 
-//    [JsonPropertyName("example")]
-//    public string? Example { get; set; }
 
-//    [JsonPropertyName("parameters")]
-//    public List<RunbookParameter>? Parameters { get; set; }
 
-//    [JsonPropertyName("category")]
-//    public string? Category { get; set; }
+// Description:
+// Azure OpenAI Search Helper
 
-//    [JsonPropertyName("author")]
-//    public string? Author { get; set; }
+// Usage:
+//   app[options]
 
-//    [JsonPropertyName("description")]
-//    public string? Description { get; set; }
+// Options:
+//  --create         Create the search index
+//  --loaddocument  Generate and load documents into the index
+//  --search        Perform a search with the specified query
+//  --help          Show help and usage information
+//  --version       Show version information
 
-//    [JsonPropertyName("synopsis")]
-//    public string? Synopsis { get; set; }
+using System.CommandLine;
+using System.Text.Json;
+using Azure.Identity;
+using Azure.AI.OpenAI;
+using Azure.Search.Documents;
+using Azure.Search.Documents.Indexes;
+using AzureOpenAISearchConfiguration;
+using AzureOpenAISearchHelper;
+using Microsoft.Extensions.Configuration;
+// ... (keep other using statements)
 
-//    [JsonPropertyName("version")]
-//    public string? Version { get; set; }
+// Define command-line options
+var createOption = new Option<bool>(
+    "--create",
+    "Create the search index");
 
-//    [JsonPropertyName("name")]
-//    public string? Name { get; set; }
+var loadOption = new Option<bool>(
+    "--load",
+    "Generate and load documents into the index");
 
-//    [JsonPropertyName("notes")]
-//    public string? Notes { get; set; }
+var searchOption = new Option<string>(
+    "--search",
+    "Perform a search with the specified query");
 
-//    [JsonPropertyName("lastEdit")]
-//    public string? LastEdit { get; set; }
+var deleteOption = new Option<bool>(
+    "--delete",
+    "Delete the search index");
 
-//    [JsonPropertyName("dependencies")]
-//    public List<string>? Dependencies { get; set; }
+// Create root command and add options
+var rootCommand = new RootCommand("Azure OpenAI Search Helper");
+rootCommand.AddOption(createOption);
+rootCommand.AddOption(loadOption);
+rootCommand.AddOption(searchOption);
+rootCommand.AddOption(deleteOption);
 
-//    // Vector field for embeddings
-//    public IList<float>? DescriptionVector { get; set; }
-//}
 
-//public class RunbookParameter
-//{
-//    [JsonPropertyName("required")]
-//    public bool Required { get; set; }
+rootCommand.SetHandler(
+    async (bool create, bool load, string searchQuery, bool delete) =>
+    {
+        try
+        {
+            // Create the Configuration Object and AISearchHelper
 
-//    [JsonPropertyName("type")]
-//    public string? Type { get; set; }
+            var configuration = new Configuration();
+            var aiSearchHelper = new AISearchHelper();
+            new ConfigurationBuilder()
+                .SetBasePath(Directory.GetCurrentDirectory())
+                .AddEnvironmentVariables()
+                .AddJsonFile("local.settings.json")
+                .Build()
+                .Bind(configuration);
 
-//    [JsonPropertyName("description")]
-//    public string? Description { get; set; }
+            configuration.Validate();
 
-//    [JsonPropertyName("default")]
-//    public string? Default { get; set; }
+            // Initialize clients
+            var defaultCredential = new DefaultAzureCredential();
+            var azureOpenAIClient = aiSearchHelper.InitializeOpenAIClient(configuration, defaultCredential);
+            var indexClient = aiSearchHelper.InitializeSearchIndexClient(configuration, defaultCredential);
+            var searchClient = indexClient.GetSearchClient(configuration.IndexName);
 
-//    [JsonPropertyName("name")]
-//    public string? Name { get; set; }
-//}
+            // Handle delete index
+            if (delete)
+            {
+                Console.WriteLine("Deleting index...");
+                await aiSearchHelper.DeleteIndexAsync(configuration, indexClient);
+            }
+
+            // Handle create index
+            if (create)
+            {
+                Console.WriteLine("Creating index...");
+                await aiSearchHelper.SetupIndexAsync(configuration, indexClient);
+
+                // If we're also loading documents, add a delay
+                if (load)
+                {
+                    Console.WriteLine("\nWaiting for index to be ready...");
+                    var startTime = DateTime.Now;
+                    while ((DateTime.Now - startTime).TotalSeconds < 5)
+                    {
+                        Console.Write(".");
+                        Thread.Sleep(200);
+                    }
+                    Console.WriteLine(); // Add newline at the end
+                }
+            }
+
+            // Handle document loading
+            if (load)
+            {
+                Console.WriteLine("Generating and loading documents...");
+                await aiSearchHelper.GenerateAndSaveRunBookDocumentsAsync(
+                    configuration,
+                    azureOpenAIClient,
+                    searchClient,
+                    $@"C:\temp\runbooks.json");
+            }
+
+           
+
+            // Handle search
+            if (!string.IsNullOrEmpty(searchQuery))
+            {
+                Console.WriteLine($"Performing search for: {searchQuery}");
+                await aiSearchHelper.Search(searchClient, searchQuery, semantic: true, hybrid: true);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error: {ex.Message}");
+            Console.WriteLine(ex.ToString());
+        }
+    },
+createOption, loadOption, searchOption, deleteOption);
+
+// Run the command
+await rootCommand.InvokeAsync(args);
