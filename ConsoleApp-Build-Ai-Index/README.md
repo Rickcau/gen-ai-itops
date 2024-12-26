@@ -8,6 +8,7 @@ Azure OpenAI Search Helper
  ConsoleApp-Build-Ai-Index **[options]**
 
 #### Options:
+   
    ```
       **--create**           Create the search index
       **--load**             Generate and load documents into the index
@@ -18,6 +19,7 @@ Azure OpenAI Search Helper
    ```
 
 #### Examples:
+  
    ~~~
       ConsoleApp-Build-Ai-Index **--create**
       ConsoleApp-Build-Ai-Index **--load**
