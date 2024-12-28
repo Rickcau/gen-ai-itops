@@ -107,7 +107,7 @@ Checking the status of a workflow run for a ChatBot user is a bit more involved:
   - ***This complexity is rarely necessary for typical “shut down these VMs at 7 PM” scenarios***.
 
 # Bottom Line
-If **user-friendly, near-real-time **status checks are crucial for your ChatBot, **Azure Automation Runbooks** is *by far the simpler path*:
+If **user-friendly, near-real-time** status checks are crucial for your ChatBot, **Azure Automation Runbooks** is *by far the simpler path*:
 
 - You get an immediate Job ID,
 - You can poll or subscribe to job completion events,
