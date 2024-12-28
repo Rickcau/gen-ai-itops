@@ -13,6 +13,7 @@ using Azure.Search.Documents.Models;
 using AzureOpenAISearchConfiguration;
 using AzureOpenAISearchHelper;
 using Microsoft.Extensions.Configuration;
+using Runbook.Models;
 
 //// RDC: 12/24/2024 - Working well.
 // Description:
@@ -122,7 +123,7 @@ rootCommand.SetHandler(
             if (!string.IsNullOrEmpty(searchQuery))
             {
                 Console.WriteLine($"Performing search for: {searchQuery}");
-                await aiSearchHelper.Search(searchClient, searchQuery, semantic: true, hybrid: true);
+                List<RunbookDetails> runBookDocuments = await aiSearchHelper.Search(searchClient, searchQuery, semantic: true, hybrid: true);
             }
         }
         catch (Exception ex)

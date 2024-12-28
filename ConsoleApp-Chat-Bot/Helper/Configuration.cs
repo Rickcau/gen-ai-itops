@@ -7,6 +7,21 @@ namespace AzureOpenAISearchConfiguration
     /// </summary>
     public class Configuration
     {
+
+        /// <summary>
+        /// Service endpoint for the search service
+        /// e.g. "https://your-search-service.search.windows.net
+        /// </summary>
+        [ConfigurationKeyName("AZURE_SUBSCRIPTION_ID")]
+        public string? AzureSubscriptionId { get; set; }
+
+        [ConfigurationKeyName("AZURE_AUTOMATION_ACCOUNT_NAME")] 
+        public string? AzureAutomationAccountName { get; set; }
+
+        [ConfigurationKeyName("AZURE_AUTOMATION_RESOURCE_GROUP")]
+        public string? AzureAutomationResourceGroup { get; set; }
+
+
         /// <summary>
         /// Service endpoint for the search service
         /// e.g. "https://your-search-service.search.windows.net
@@ -84,6 +99,13 @@ namespace AzureOpenAISearchConfiguration
         /// </summary>
         [ConfigurationKeyName("AZURE_OPENAI_EMBEDDING_DIMENSIONS")]
         public string? AzureOpenAIEmbeddingDimensions { get; set; }
+
+        /// <summary>
+        /// Service endpoint for the search service
+        /// e.g. "https://your-search-service.search.windows.net
+        /// </summary>
+        [ConfigurationKeyName("APPLICATIONINSIGHTS_CONNECTION_STRING")]
+        public string? AzureAppInsights { get; set; }
 
         /// <summary>
         /// Validate the configuration and set applicable defaults if necessary

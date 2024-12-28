@@ -10,6 +10,7 @@ using System.Text.Json;
 using Runbook.Models;
 using OpenAI.Embeddings;
 using Azure.Search.Documents.Models;
+using Azure.Core;
 
 namespace AzureOpenAISearchHelper
 {
@@ -20,24 +21,24 @@ namespace AzureOpenAISearchHelper
     public class AISearchHelper
     {
        
-        public AzureOpenAIClient InitializeOpenAIClient(Configuration configuration, DefaultAzureCredential defaultCredential)
+        public AzureOpenAIClient InitializeOpenAIClient(Configuration configuration, TokenCredential credential)
         {
             if (!string.IsNullOrEmpty(configuration.AzureOpenAIApiKey))
             {
                 return new AzureOpenAIClient(new Uri(configuration.AzureOpenAIEndpoint!), new AzureKeyCredential(configuration.AzureOpenAIApiKey));
             }
 
-            return new AzureOpenAIClient(new Uri(configuration.AzureOpenAIEndpoint!), defaultCredential);
+            return new AzureOpenAIClient(new Uri(configuration.AzureOpenAIEndpoint!), credential);
         }
 
-        public SearchIndexClient InitializeSearchIndexClient(Configuration configuration, DefaultAzureCredential defaultCredential)
+        public SearchIndexClient InitializeSearchIndexClient(Configuration configuration, TokenCredential credential)
         {
             if (!string.IsNullOrEmpty(configuration.SearchAdminKey))
             {
                 return new SearchIndexClient(new Uri(configuration.SearchServiceEndpoint!), new AzureKeyCredential(configuration.SearchAdminKey));
             }
 
-            return new SearchIndexClient(new Uri(configuration.SearchServiceEndpoint!), defaultCredential);
+            return new SearchIndexClient(new Uri(configuration.SearchServiceEndpoint!), credential);
         }
 
         public async Task DeleteIndexAsync(Configuration configuration, SearchIndexClient indexClient)
@@ -239,14 +240,14 @@ namespace AzureOpenAISearchHelper
             return JsonSerializer.Deserialize<List<RunbookData>>(jsonContent, options) ?? new List<RunbookData>();
         }
 
-        public async Task Search(SearchClient searchClient, string query, int k = 50, int top = 3, string? filter = null, bool textOnly = false, bool exhaustive = false, bool hybrid = false, bool semantic = false, string debug = "disabled", double minRerankerScore = 2.0)
+        public async Task<List<RunbookDetails>> Search(SearchClient searchClient, string query, int k = 3, int top = 10, string? filter = null, bool textOnly = false, bool exhaustive = false, bool hybrid = false, bool semantic = false, string debug = "disabled", double minRerankerScore = 2.0)
         {
             // Perform the vector similarity search  
             var searchOptions = new SearchOptions
             {
                 Filter = filter,
                 Size = top,
-                Select = { "name", "id", "description", },
+                Select = { "name", "id", "description", "parameters"},
                 HighlightFields = { "name" },
                 IncludeTotalCount = true
             };
@@ -286,6 +287,8 @@ namespace AzureOpenAISearchHelper
             string? queryText = (textOnly || hybrid || semantic) ? query : null;
             SearchResults<SearchDocument> response = await searchClient.SearchAsync<SearchDocument>(queryText, searchOptions);
 
+            List<RunbookDetails> runbookDetailsList = new List<RunbookDetails>();
+
             if (response.SemanticSearch?.Answers?.Count > 0)
             {
                 Console.WriteLine("\nQuery Answers:");
@@ -297,11 +300,23 @@ namespace AzureOpenAISearchHelper
                 }
             }
 
+            int count = 0;
             await foreach (SearchResult<SearchDocument> result in response.GetResultsAsync())
             {
                 // Only process results that meet the minimum reranker score
                 if (result.SemanticSearch?.RerankerScore >= minRerankerScore)
                 {
+                    count++;
+                    RunbookDetails runBookDetails = new RunbookDetails();
+
+                    runBookDetails.id = (string)result.Document["id"];
+                    runBookDetails.Name = (string)result.Document["name"];
+                    runBookDetails.Description = (string)result.Document["description"];
+                    runBookDetails.Parameters = (string)result.Document["parameters"];
+                    runBookDetails.Score = (double)result.Score!;
+                    runBookDetails.RerankerScore = (double)result.SemanticSearch.RerankerScore;
+
+                    runbookDetailsList.Add(runBookDetails);
 
                     Console.WriteLine($"Name: {result.Document["name"]}");
                     Console.WriteLine($"Score: {result.Score}");
@@ -322,8 +337,8 @@ namespace AzureOpenAISearchHelper
                 }
             }
             Console.WriteLine($"Total Results: {response.TotalCount}");
+            return runbookDetailsList;
         }
-
 
     }
 }
