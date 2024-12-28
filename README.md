@@ -1,6 +1,9 @@
 # Generative AI Solution for IT Operations
 This solution will leverage Azure Automation and Runbooks for all Operations along with a GenAI ChatBot that allows users to request specific operations to be performed (e.g. List VMs, ShutDown VMs etc).  
 
+## Routine IT Infrastructure Tasks
+Please read **[this seciton](./notes/ImportantNotes.md)** for some very important details on Azure Automation / GitHub Actions.
+
 We will leverage Azure RBAC custom roles to define the various operations/actions that users can perform.  Each user will be assigned to the specific Roles and this will determine which operations they can perform.
 
 # Simplicity vs. Overengineering:
