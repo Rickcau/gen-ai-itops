@@ -1,183 +1,4 @@
-﻿//using System;
-//using System.Text.Json;
-//using System.Text.Json.Serialization;
-//using Azure.Identity;
-//using Azure.AI.OpenAI;
-////using OpenAI;
-////using OpenAI.Embeddings;
-//using Azure.Search.Documents;
-//using Azure.Search.Documents.Indexes;
-//using Azure.Search.Documents.Indexes.Models;
-//using Azure.Search.Documents.Models;
-//using AzureOpenAISearchConfiguration;
-//using AzureOpenAISearchHelper;
-//using Microsoft.Extensions.Configuration;
-//using Microsoft.SemanticKernel;
-//using Microsoft.SemanticKernel.Agents;
-//using Microsoft.SemanticKernel.Agents.Chat;
-//using Microsoft.SemanticKernel.Agents.OpenAI;
-//using Microsoft.SemanticKernel.Connectors.AzureOpenAI;
-//using Microsoft.SemanticKernel.Connectors.OpenAI;
-//using Microsoft.SemanticKernel.ChatCompletion;
-//using ConsoleApp_Chat_Bot.Prompts;
-//using ConsoleApp_Chat_Bot.Helper;
-
-//// dotnet add package Microsoft.SemanticKernel.Agents.Core --version 1.32.0-alpha
-//// dotnet add package Microsoft.SemanticKernel.Agents.OpenAI --version 1.32.0-alpha
-//// dotnet add package Microsoft.SemanticKernel.Agents.Abstractions --version 1.32.0-alpha
-
-//// Create the Configuration Object and AISearchHelper
-//var configuration = new Configuration();
-//var aiSearchHelper = new AISearchHelper();
-//new ConfigurationBuilder()
-//    .SetBasePath(Directory.GetCurrentDirectory())
-//    .AddEnvironmentVariables()
-//    .AddJsonFile("local.settings.json")
-//    .Build()
-//    .Bind(configuration);
-
-//configuration.Validate();
-
-
-//// Initialize a Kernel with a chat-completion service
-//IKernelBuilder builder = Kernel.CreateBuilder();
-
-////builder.AddAzureOpenAIChatCompletion(
-////     "gpt-35-turbo",                      // Azure OpenAI Deployment Name
-////     "https://contoso.openai.azure.com/", // Azure OpenAI Endpoint
-////     "...your Azure OpenAI Key...");      // Azure OpenAI Key
-
-//builder.AddAzureOpenAIChatCompletion(configuration.AzureOpenAIDeployment!, configuration.AzureOpenAIEndpoint!, configuration.AzureOpenAIApiKey!, serviceId: "service-1");
-
-//Kernel kernel = builder.Build();
-
-//ChatCompletionAgent orchestratorAgent =
-//    new()
-//    {
-//        Name = "OrchestratorAgent",
-//        Instructions = CorePrompts.OrchestratorAgentInstructions,
-//        Kernel = kernel,
-//        Arguments = // Specify the service-identifier via the KernelArguments
-//          new KernelArguments(
-//            new OpenAIPromptExecutionSettings()
-//            {
-//                ServiceId = "service-1" // The target service-identifier.
-//            }),
-//    };
-
-//ChatCompletionAgent runbookAgent =
-//    new()
-//    {
-//        Name = "RunbookAgent",
-//        Instructions = "<agent instructions>",
-//        Kernel = kernel,
-//        Arguments = // Specify the service-identifier via the KernelArguments
-//          new KernelArguments(
-//            new OpenAIPromptExecutionSettings()
-//            {
-//                ServiceId = "service-1", // The target service-identifier.
-//                ToolCallBehavior = ToolCallBehavior.AutoInvokeKernelFunctions,
-//            }),
-//    };
-
-//// Next we need to define the plugins available to the agent.
-//// runbookAgent.Kernel.Plugins.Add(KernelPluginFactory.CreateFromType<AISearchPlugin>());
-//// runbookAgent.Kernel.Plugins.Add(KernelPluginFactory.CreateFromType<AISearchPlugin>());
-
-//// Create a ChatHistory object to maintain the conversation state.
-//ChatHistory chathistory = [];
-
-//// Add a user message to the conversation
-//chathistory.Add(new ChatMessageContent(AuthorRole.User, "Is the Sky Blue?"));
-
-//string OrchestratorAgentName = "OrchestratorAgent";
-//string RunbookAgentName = "RunbookAgent";
-
-//KernelFunction selectionFunction =
-//    KernelFunctionFactory.CreateFromPrompt(
-//        $$$"""
-//        Your job is to determine which participant takes the next turn in a conversation according to the action of the most recent participant.
-//        State only the name of the participant to take the next turn.
-
-//        Choose only from these participants:
-//        - {{{OrchestratorAgentName}}}
-//        - {{{RunbookAgentName}}}
-
-//        Always follow these rules when selecting the next participant:
-//        - After user input, it is {{{OrchestratorAgentName}}}'s turn.
-//        - After {{{OrchestratorAgentName}}} replies, it is {{{RunbookAgentName}}}'s turn.
-//        - After {{{RunbookAgentName}}} replies, it is {{{OrchestratorAgentName}}}'s turn.
-
-//        History:
-//        {{$chathistory}}
-//        """);
-
-
-//AgentGroupChat groupchat =
-//    new(orchestratorAgent, runbookAgent)
-//    {
-//        ExecutionSettings =
-//            new()
-//            {
-//                // TerminationStrategy is used to termine whern the Orchestration Agent says "DONE!"
-//                TerminationStrategy =
-//                    new ApprovalTerminationStrategy()
-//                    {
-//                        // Only the Orchestrator Agent may consider this done
-//                        Agents = [orchestratorAgent],
-//                        // Limit total number of turns
-//                        MaximumIterations = 10,
-//                    },
-//                // Here a KernelFunctionSelectionStrategy selects agents based on a prompt function
-//                SelectionStrategy =
-//                    new KernelFunctionSelectionStrategy(selectionFunction, CreateKernelWithChatCompletion())
-//                    {
-//                        // Returns the entire result value as a string.
-//                        ResultParser = (result) => result.GetValue<string>() ?? OrchestratorAgentName,
-//                        // The prompt variable name for the agents argument.
-//                        AgentsVariableName = "agents",
-//                        // The prompt variable name for the history argument.
-//                        HistoryVariableName = "chathistory",
-//                    },
-//            }
-//    };
-
-
-//// invoke the chat and display messages
-//string agentsTask =
-//    """
-//    Can you tell me why the sky is blue?
-//    """;
-
-//groupchat.AddChatMessage(new ChatMessageContent(AuthorRole.User, agentsTask));
-//Console.WriteLine($"# {AuthorRole.User}: '{agentsTask}\n");
-
-//await foreach (var content in groupchat.InvokeAsync())
-//{
-//    // SetConsoleForegroundColor(content.AuthorName);
-
-//    Console.WriteLine($"# {content.Role} - {content.AuthorName ?? "*"}: '{content.Content}'\n");
-
-//    /*if (content.Content.Contains("anything else", StringComparison.OrdinalIgnoreCase))
-//    {
-//        string userInput = Console.ReadLine();
-
-//        chat.AddChatMessage(new ChatMessageContent(AuthorRole.User, userInput));
-//    }*/
-//}
-//// Generate the agent response(s)
-
-//Kernel CreateKernelWithChatCompletion()
-//        {
-//            // Create the Kernel
-//            Kernel kernel = Kernel.CreateBuilder()
-//                .AddAzureOpenAIChatCompletion(configuration.AzureOpenAIDeployment!, configuration.AzureOpenAIEndpoint!, configuration.AzureOpenAIApiKey!, serviceId: "service-1")
-//                .Build();
-
-//return kernel;
-//        }
-
-using Microsoft.SemanticKernel;
+﻿using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.Agents;
 using Microsoft.SemanticKernel.Agents.Chat;
 using Microsoft.SemanticKernel.ChatCompletion;
@@ -189,6 +10,17 @@ using AzureOpenAISearchConfiguration;
 using Plugins;
 using System;
 using System.Data;
+using Azure.Monitor.OpenTelemetry.Exporter;
+using OpenTelemetry;
+using OpenTelemetry.Logs;
+using OpenTelemetry.Metrics;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
+using Microsoft.Extensions.Logging;
+using System.Diagnostics;
+using Microsoft.Extensions.DependencyInjection;
+using Azure.Identity;
+using Azure.Core;
 
 var configuration = new Configuration();
 new ConfigurationBuilder()
@@ -200,8 +32,95 @@ new ConfigurationBuilder()
 
 configuration.Validate();
 
+// This section of Code is only here to allow the testing of AppInsights Logging.
+// I only use this if the OpenTelemetry code is having issues and I am not seeing things in App Insights.
+// 
+
+#region Testing AppInsights
+var checkAppInsights = false;
+
+if (checkAppInsights)
+{
+    // When this code executes you should see a TestActivity logged to AppInsights
+    // This will verify that you logging to AppInsights is working
+    string AppInsightsConnection= configuration.AzureAppInsights ?? "";
+    using var tracerProvider = Sdk.CreateTracerProviderBuilder()
+           .AddSource("DemoSource")
+           .AddAzureMonitorTraceExporter(options =>
+           {
+               options.ConnectionString = AppInsightsConnection;
+           })
+           .Build();
+
+    // Manually create a trace
+    var activitySource = new ActivitySource("DemoSource");
+    using (var activity = activitySource.StartActivity("TestActivity"))
+    {
+        activity?.SetTag("demo", "test");
+    }
+}
+#endregion End Testing AppInsights
+
+// Create an ActivitySource that matches your .AddSource name:
+//var manualSource = new ActivitySource("TelemetryMyExample");
+
+
+
+#region Enable OpenTelemetry for Semantic Kernel
+// If you want to see all the calls that are happening with LLM, this is the best way to get that type of telemetry.
+// Likely you could leverage something like AppContext to enable this or just use an environment setting
+// 
+AppContext.SetSwitch("Microsoft.SemanticKernel.Experimental.GenAI.EnableOTelDiagnosticsSensitive", true);
+    string AppInsightsConnectionString = configuration.AzureAppInsights ?? "";  // Uncomment this if you plan top use OpenTelemetry
+    // Using resource builder to add service name to all telemetry items
+    var resourceBuilder = ResourceBuilder
+        .CreateDefault()
+        .AddService("TelemetryMyExample");
+    // Create the OpenTelemetry TracerProvider and MeterProvider
+    using var traceProvider = Sdk.CreateTracerProviderBuilder()
+        .SetResourceBuilder(resourceBuilder)
+        .AddSource("Microsoft.SemanticKernel*")
+        .AddSource("TelemetryMyExample")
+        // .AddConsoleExporter()
+        .AddAzureMonitorTraceExporter(options => options.ConnectionString = AppInsightsConnectionString)
+        .Build();
+
+    using var meterProvider = Sdk.CreateMeterProviderBuilder()
+        .SetResourceBuilder(resourceBuilder)
+        .AddMeter("Microsoft.SemanticKernel*")
+        //.AddConsoleExporter()
+        .AddAzureMonitorMetricExporter(options => options.ConnectionString = AppInsightsConnectionString)
+        .Build();
+
+    // Create the OpenTelemetry LoggerFactory
+    using var loggerFactory = LoggerFactory.Create(builder =>
+    {
+        // Add OpenTelemetry as a logging provider
+        builder.AddOpenTelemetry(options =>
+        {
+            options.SetResourceBuilder(resourceBuilder);
+            options.AddAzureMonitorLogExporter(options => options.ConnectionString = AppInsightsConnectionString);
+           // options.AddConsoleExporter();
+            // Format log messages. This is default to false.
+            options.IncludeFormattedMessage = true;
+            options.IncludeScopes = true;
+        });
+        builder.SetMinimumLevel(LogLevel.Debug);
+    });
+# endregion End of Enable OpenTelemetry for Semantic Kernel
 // Initialize kernel with chat completion service
 Kernel kernel = CreateKernelWithChatCompletion();
+
+// Aquire Crednetials
+Console.WriteLine("A browser window will open for authentication. Please select your account...");
+var credential = new InteractiveBrowserCredential(new InteractiveBrowserCredentialOptions
+{
+    TokenCachePersistenceOptions = new TokenCachePersistenceOptions()
+});
+
+// Validate the credential by acquiring a token (one-time prompt)
+await credential.GetTokenAsync(new TokenRequestContext(new[] { "https://management.azure.com/.default" }));
+Console.WriteLine("Authentication successful!");
 
 //var kernel = Kernel.CreateBuilder()
 //    .AddAzureOpenAIChatCompletion(
@@ -272,9 +191,13 @@ ChatCompletionAgent runbookAgent = new ChatCompletionAgent
 };
 
 KernelPlugin echoplugin = KernelPluginFactory.CreateFromType<EchoPlugin>();
-KernelPlugin aisearchplugin = KernelPluginFactory.CreateFromType<AISearchPlugin>();
 runbookAgent.Kernel.Plugins.Add(echoplugin);
-runbookAgent.Kernel.Plugins.Add(aisearchplugin);
+// runbookAgent.Kernel.Plugins.Add(aisearchplugin); <- this is not needed as the kernel.ImportPluginFromObject() adds the plugin to the Plugin collection; 
+// KernelPlugin aisearchplugin = KernelPluginFactory.CreateFromType<AISearchPlugin>();
+
+KernelPlugin aisearchplugin = kernel.ImportPluginFromObject(new AISearchPlugin(configuration,credential));
+KernelPlugin runbookplugin = kernel.ImportPluginFromObject(new RunbookPlugin(configuration, credential));
+
 
 string OrchestratorAgentName = "OrchestratorAgent";
 string RunbookAgentName = "RunbookAgent";
@@ -413,12 +336,17 @@ foreach (var message in chatHistory)
 
 Kernel CreateKernelWithChatCompletion()
 {
-    // Create the Kernel
-    Kernel kernel = Kernel.CreateBuilder()
-        .AddAzureOpenAIChatCompletion(configuration.AzureOpenAIDeployment!, configuration.AzureOpenAIEndpoint!, configuration.AzureOpenAIApiKey!, serviceId: "azure-openai")
-        .Build();
-
-    return kernel;
+    // Very important to enable logging with the loggerFactory otherwise the telemetry will not be logged
+    // AppInsights the line of code that most folks miss is: builder.Services.AddSingleton(loggerFactory); which requires the use of dependency injection
+    var builder = Kernel.CreateBuilder();
+    builder.Services.AddSingleton(loggerFactory);
+    builder.AddAzureOpenAIChatCompletion(
+        configuration.AzureOpenAIDeployment!,
+        configuration.AzureOpenAIEndpoint!,
+        configuration.AzureOpenAIApiKey!,
+        serviceId: "azure-openai"
+    );
+    return builder.Build();
     //        }
 }
 
