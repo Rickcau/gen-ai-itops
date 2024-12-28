@@ -125,4 +125,4 @@ If **user-friendly, near-real-time** status checks are crucial for your ChatBot,
 # Conclusion
 For **pure IT operations** like shutting down VMs on a schedule, **Azure Automation Runbooks** is often the most direct and cost-effective approach. 
 GitHub Actions can be used if you prefer to unify everything in one pipeline or if you have workflows that spin up/shut down environments as part of
-a larger CI/CD process. However, if your only goal is “Shut down these VMs at 7 PM each night and turn them back on at 7 AM,” you’ll find Azure Automation’s integrated scheduling and management features well-suited to the task.
+a larger CI/CD process. However, if your only goal is **“Shut down these VMs at 7 PM each night and turn them back on at 7 AM,”** you’ll find **Azure Automation’s integrated scheduling and management** features well-suited to the task.
