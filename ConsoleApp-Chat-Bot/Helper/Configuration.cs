@@ -108,6 +108,18 @@ namespace AzureOpenAISearchConfiguration
         public string? AzureAppInsights { get; set; }
 
         /// <summary>
+        /// Enable debug mode for detailed logging
+        /// </summary>
+        [ConfigurationKeyName("DEBUG_MODE")]
+        public bool DebugMode { get; set; }
+
+        /// <summary>
+        /// Log level for detailed logging
+        /// </summary>
+        [ConfigurationKeyName("LOG_LEVEL")]
+        public string? LogLevel { get; set; }
+
+        /// <summary>
         /// Validate the configuration and set applicable defaults if necessary
         /// </summary>
         /// <exception cref="ArgumentException">If any parameters are invalid</exception>

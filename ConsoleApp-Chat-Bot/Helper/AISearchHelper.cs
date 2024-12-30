@@ -11,6 +11,7 @@ using Runbook.Models;
 using OpenAI.Embeddings;
 using Azure.Search.Documents.Models;
 using Azure.Core;
+using Microsoft.Extensions.Logging;
 
 namespace AzureOpenAISearchHelper
 {
@@ -20,7 +21,13 @@ namespace AzureOpenAISearchHelper
     /// </summary>
     public class AISearchHelper
     {
-       
+        private readonly ILogger<AISearchHelper> _logger;
+
+        public AISearchHelper(ILogger<AISearchHelper>? logger = null)
+        {
+            _logger = logger ?? LoggerFactory.Create(builder => builder.AddConsole()).CreateLogger<AISearchHelper>();
+        }
+
         public AzureOpenAIClient InitializeOpenAIClient(Configuration configuration, TokenCredential credential)
         {
             if (!string.IsNullOrEmpty(configuration.AzureOpenAIApiKey))
@@ -45,19 +52,19 @@ namespace AzureOpenAISearchHelper
         {
             try
             {
-                Console.WriteLine($"Attempting to delete index: {configuration.IndexName}");
+                _logger.LogInformation("Attempting to delete index: {IndexName}", configuration.IndexName);
                 await indexClient.DeleteIndexAsync(configuration.IndexName);
-                Console.WriteLine($"Successfully deleted index: {configuration.IndexName}");
+                _logger.LogInformation("Successfully deleted index: {IndexName}", configuration.IndexName);
             }
             catch (RequestFailedException ex)
             {
                 if (ex.Status == 404)
                 {
-                    Console.WriteLine($"Index {configuration.IndexName} does not exist.");
+                    _logger.LogInformation("Index {IndexName} does not exist.", configuration.IndexName);
                 }
                 else
                 {
-                    Console.WriteLine($"Error deleting index: {ex.Message}");
+                    _logger.LogError(ex, "Error deleting index: {Message}", ex.Message);
                     throw;
                 }
             }
@@ -173,7 +180,6 @@ namespace AzureOpenAISearchHelper
 
         public async Task GenerateAndSaveRunBookDocumentsAsync(Configuration configuration, AzureOpenAIClient azureOpenAIClient, SearchClient searchClient, string jsonFilePath)
         {
-            //string sampleDocumentContent = File.ReadAllText(sampleDocumentsPath);
             var runbooks = LoadRunbooksFromJson(jsonFilePath);
 
             if (runbooks is null || runbooks.Count == 0)
@@ -189,41 +195,32 @@ namespace AzureOpenAISearchHelper
             foreach (var runbook in runbooks)
             {
                 string textForEmbedding = $"Name: {runbook.Name ?? ""}, Description: {runbook.Description ?? ""}";
-                // Call your custom method to get embeddings
-                // If your AzureOpenAIClient uses a different signature, adjust accordingly
-                // Existing code
+
                 if (runbook.ParametersJson != null)
                 {
-                    Console.WriteLine(runbook.ParametersJson);    
-                    //runbook.ParametersJson = JsonSerializer.Serialize(runbook.Parameters);
-                    //runbook.Parameters = null;
+                    _logger.LogDebug("Parameters JSON: {ParametersJson}", runbook.ParametersJson);
                 }
 
                 runbook.Tags ??= new List<string>();
                 runbook.Dependencies ??= new List<string>();
 
                 OpenAIEmbedding embeddingDescription = await embeddingClient.GenerateEmbeddingAsync(textForEmbedding);
-                // Store the embedding in the DescritionVector
                 runbook.DescriptionVector = embeddingDescription.ToFloats().ToArray().ToList();
-
             }
-
 
             // Serialize runbooks to JSON for verification
             string serializedRunbooks = JsonSerializer.Serialize(runbooks, new JsonSerializerOptions
             {
                 WriteIndented = true,
-                Converters = { new ParametersJsonConverter() }  // Ensure the custom converter is applied during serialization
+                Converters = { new ParametersJsonConverter() }
             });
 
-            Console.WriteLine("Serialized Runbooks JSON:");
-            Console.WriteLine(serializedRunbooks);
+            _logger.LogDebug("Serialized Runbooks JSON: {SerializedRunbooks}", serializedRunbooks);
 
             // Upload or merge the documents
             var batch = IndexDocumentsBatch.Upload(runbooks);
             var result = await searchClient.IndexDocumentsAsync(batch);
-            Console.WriteLine( result.ToString() );
-
+            _logger.LogDebug("Index documents result: {Result}", result.ToString());
         }
 
         private List<RunbookData> LoadRunbooksFromJson(string jsonFilePath)
@@ -242,7 +239,6 @@ namespace AzureOpenAISearchHelper
 
         public async Task<List<RunbookDetails>> Search(SearchClient searchClient, string query, int k = 3, int top = 10, string? filter = null, bool textOnly = false, bool exhaustive = false, bool hybrid = false, bool semantic = false, string debug = "disabled", double minRerankerScore = 2.0)
         {
-            // Perform the vector similarity search  
             var searchOptions = new SearchOptions
             {
                 Filter = filter,
@@ -251,6 +247,7 @@ namespace AzureOpenAISearchHelper
                 HighlightFields = { "name" },
                 IncludeTotalCount = true
             };
+
             if (!textOnly)
             {
                 searchOptions.VectorSearch = new()
@@ -266,6 +263,7 @@ namespace AzureOpenAISearchHelper
 
                 };
             }
+
             if (semantic)
             {
                 searchOptions.QueryType = SearchQueryType.Semantic;
@@ -276,14 +274,7 @@ namespace AzureOpenAISearchHelper
                     QueryAnswer = new QueryAnswer(QueryAnswerType.Extractive),
                 };
             }
-            //if (!string.IsNullOrEmpty(debug) && debug != "disabled")
-            //{
-            //    if (!semantic)
-            //    {
-            //        searchOptions.SemanticSearch = new SemanticSearchOptions();
-            //    }
-            //    searchOptions.SemanticSearch.Debug = new QueryDebugMode(debug);
-            //}
+
             string? queryText = (textOnly || hybrid || semantic) ? query : null;
             SearchResults<SearchDocument> response = await searchClient.SearchAsync<SearchDocument>(queryText, searchOptions);
 
@@ -291,19 +282,17 @@ namespace AzureOpenAISearchHelper
 
             if (response.SemanticSearch?.Answers?.Count > 0)
             {
-                Console.WriteLine("\nQuery Answers:");
+                _logger.LogDebug("Query Answers:");
                 foreach (QueryAnswerResult answer in response.SemanticSearch.Answers)
                 {
-                    Console.WriteLine($"Answer Highlights: {answer.Highlights}");
-                    Console.WriteLine($"Answer Text: {answer.Text}");
-                    Console.WriteLine();
+                    _logger.LogDebug("Answer Highlights: {Highlights}", answer.Highlights);
+                    _logger.LogDebug("Answer Text: {Text}", answer.Text);
                 }
             }
 
             int count = 0;
             await foreach (SearchResult<SearchDocument> result in response.GetResultsAsync())
             {
-                // Only process results that meet the minimum reranker score
                 if (result.SemanticSearch?.RerankerScore >= minRerankerScore)
                 {
                     count++;
@@ -318,25 +307,26 @@ namespace AzureOpenAISearchHelper
 
                     runbookDetailsList.Add(runBookDetails);
 
-                    Console.WriteLine($"Name: {result.Document["name"]}");
-                    Console.WriteLine($"Score: {result.Score}");
-                    Console.WriteLine($"Reranker Score: {result.SemanticSearch!.RerankerScore}\n");
+                    _logger.LogDebug("Search Result - Name: {Name}, Score: {Score}, RerankerScore: {RerankerScore}", 
+                        result.Document["name"],
+                        result.Score,
+                        result.SemanticSearch!.RerankerScore);
+
                     var truncatedDescription = result.Document["description"] != null && result?.Document?["description"]?.ToString()?.Length > 20
                         ? result.Document["description"]?.ToString()?.Substring(0, 20)
                         : result!.Document["description"];
-                    Console.WriteLine($"Description: {truncatedDescription}\n");
-                    Console.WriteLine();
+                    _logger.LogDebug("Description: {Description}", truncatedDescription);
 
                     if (result.SemanticSearch?.Captions?.Count > 0)
                     {
                         QueryCaptionResult firstCaption = result.SemanticSearch.Captions[0];
-                        Console.WriteLine($"First Caption Highlights: {firstCaption.Highlights}");
-                        Console.WriteLine($"First Caption Text: {firstCaption.Text}");
-                        Console.WriteLine();
+                        _logger.LogDebug("First Caption - Highlights: {Highlights}, Text: {Text}", 
+                            firstCaption.Highlights,
+                            firstCaption.Text);
                     }
                 }
             }
-            Console.WriteLine($"Total Results: {response.TotalCount}");
+            _logger.LogDebug("Total Results: {TotalCount}", response.TotalCount);
             return runbookDetailsList;
         }
 

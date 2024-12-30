@@ -23,30 +23,31 @@ namespace Plugins
         private readonly AzureOpenAIClient _azureOpenAIClient;
         private readonly SearchIndexClient _indexClient;
         private readonly SearchClient _searchClient;
+        private readonly ILogger<AISearchPlugin> _logger;
 
-        public AISearchPlugin(Configuration configuration, TokenCredential credential)
+        public AISearchPlugin(Configuration configuration, TokenCredential credential, ILogger<AISearchPlugin>? logger = null)
         {
-            //_aiSearchHelper = new AISearchHelper();
             _credential = credential;
             _configuration = configuration;
+            _logger = logger ?? LoggerFactory.Create(builder => builder.AddConsole()).CreateLogger<AISearchPlugin>();
 
-            _aiSearchHelper = new AISearchHelper();
+            // Create AISearchHelper with a logger
+            var aiSearchHelperLogger = LoggerFactory.Create(builder => builder.AddConsole())
+                .CreateLogger<AISearchHelper>();
+            _aiSearchHelper = new AISearchHelper(aiSearchHelperLogger);
 
             // Initialize clients
             _azureOpenAIClient = _aiSearchHelper.InitializeOpenAIClient(configuration, credential);
             _indexClient = _aiSearchHelper.InitializeSearchIndexClient(configuration, credential);
             _searchClient = _indexClient.GetSearchClient(configuration.IndexName);
-
         }
 
-
         [KernelFunction, Description("Searches the Azure Search index for information about Runbooks that are available to perform operations with")]
-        public async Task<string> SearchRunBookIndex([Description("The search query that we are searching the Azure Search Index for information matching the search query.")]
+        public async Task<string> SearchRunBookIndex(
+            [Description("The search query that we are searching the Azure Search Index for information matching the search query.")]
             string searchQuery)
         {
-            // RDC: We need to move this to ILogger
-            Console.WriteLine($"Debug: AISearchPlugin: I can list VMs for you but I need to know the name of the resouce group... this is just for testing");
-            Console.WriteLine($"Performing search for: {searchQuery}");
+            _logger.LogDebug("AISearchPlugin: Searching for runbooks matching query: {SearchQuery}", searchQuery);
 
             StringBuilder content = new StringBuilder();
             List<RunbookDetails> runBookDocumentList = await _aiSearchHelper.Search(_searchClient, searchQuery, semantic: true, hybrid: true);
@@ -67,27 +68,5 @@ namespace Plugins
 
             return content.ToString();
         }
-
-
-        //[KernelFunction, Description("Searches the Azure Search index for information about the Tesla based on the Tesla user manual.")]
-        //public async Task<string> SearchManualsIndex(
-        //   [Description("The search query that we are searching the Azure Search Tesla Manual Index for information matching the search query.")]
-        //    string query,
-        //   ILogger? logger = null)
-        //{
-        //    StringBuilder content = new StringBuilder();
-
-        //    Console.WriteLine("Searching Manuals Index...\n");
-
-        //    List<UserManualDetails> userManualDetailsList = await SemanticHybridSearch(query, logger);
-
-        //    foreach (var item in userManualDetailsList)
-        //    {
-        //        //Console.WriteLine(item.Chunk);
-        //        content.Append(item.Chunk);
-        //    }
-
-        //    return content.ToString();
-        //}
     }
 }

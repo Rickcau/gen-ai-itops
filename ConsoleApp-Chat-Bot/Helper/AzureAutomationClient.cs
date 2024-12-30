@@ -8,6 +8,7 @@ using Azure.ResourceManager;
 using Azure.ResourceManager.Automation;
 using Azure.ResourceManager.Automation.Models;
 using Azure.ResourceManager.Resources;
+using Microsoft.Extensions.Logging;
 
 namespace AzureAutomationLibrary
 {
@@ -18,35 +19,36 @@ namespace AzureAutomationLibrary
         public string? AutomationAccountName { get; set; }
         public string? RunbookName { get; set; }
     }
+
     public class AzureAutomationClient
     {
         private readonly string _subscriptionId;
         private readonly string _resourceGroupName;
         private readonly string _automationAccountName;
         private readonly ArmClient _armClient;
+        private readonly ILogger<AzureAutomationClient> _logger;
 
-        public AzureAutomationClient(string subscriptionId, string resourceGroupName, string automationAccountName, TokenCredential credential)
+        public AzureAutomationClient(string subscriptionId, string resourceGroupName, string automationAccountName, TokenCredential credential, ILogger<AzureAutomationClient>? logger = null)
         {
             if (credential == null)
                 throw new ArgumentNullException(nameof(credential), "The provided credential cannot be null.");
 
-            _subscriptionId = subscriptionId ?? throw new ArgumentNullException(nameof(subscriptionId));
-            _resourceGroupName = resourceGroupName ?? throw new ArgumentNullException(nameof(resourceGroupName));
-            _automationAccountName = automationAccountName ?? throw new ArgumentNullException(nameof(automationAccountName));
+            _subscriptionId = subscriptionId;
+            _resourceGroupName = resourceGroupName;
+            _automationAccountName = automationAccountName;
             _armClient = new ArmClient(credential);
+            _logger = logger ?? LoggerFactory.Create(builder => builder.AddConsole()).CreateLogger<AzureAutomationClient>();
         }
 
-        public async Task<IEnumerable<string>> ListRunbooksAsync()
+        public async Task<List<string>> ListRunbooksAsync()
         {
             try
             {
-                // Attempt to retrieve the subscription resource
+                var runbookNames = new List<string>();
                 var subscriptionResource = _armClient.GetSubscriptionResource(new ResourceIdentifier($"/subscriptions/{_subscriptionId}"));
                 ResourceGroupResource resourceGroup = await subscriptionResource.GetResourceGroupAsync(_resourceGroupName);
-                AutomationAccountResource automationAccount = await resourceGroup.GetAutomationAccountAsync(_automationAccountName);
-                
-                var runbooks = automationAccount.GetAutomationRunbooks();
-                var runbookNames = new List<string>();
+                var automationAccount = await resourceGroup.GetAutomationAccountAsync(_automationAccountName);
+                var runbooks = automationAccount.Value.GetAutomationRunbooks();
 
                 await foreach (var runbook in runbooks.GetAllAsync())
                 {
@@ -56,53 +58,52 @@ namespace AzureAutomationLibrary
             }
             catch (Exception ex)
             {
-                Console.WriteLine("An unexpected error occurred while listing runbooks.");
-                Console.WriteLine($"Details: {ex.Message}");
-                throw; // Optionally rethrow the exception to propagate it
+                _logger.LogError(ex, "An unexpected error occurred while listing runbooks");
+                throw;
             }
         }
 
-
-        public async Task<(string JobId, string RunbookName)> StartRunbookAsync(string runbookName)
+        public async Task<(string JobId, string RunbookName)> StartRunbookAsync(string runbookName, string parameters = "")
         {
             if (string.IsNullOrEmpty(runbookName))
                 throw new ArgumentException("Runbook name cannot be null or empty", nameof(runbookName));
 
             var subscriptionResource = _armClient.GetSubscriptionResource(new ResourceIdentifier($"/subscriptions/{_subscriptionId}"));
             ResourceGroupResource resourceGroup = await subscriptionResource.GetResourceGroupAsync(_resourceGroupName);
-            AutomationAccountResource automationAccount = await resourceGroup.GetAutomationAccountAsync(_automationAccountName);
+            var automationAccount = (await resourceGroup.GetAutomationAccountAsync(_automationAccountName)).Value;
+            var runbook = automationAccount.GetAutomationRunbook(runbookName);
 
-            var runbooks = automationAccount.GetAutomationRunbooks();
-            AutomationRunbookResource? matchingRunbook = null;
-
-            await foreach (var rb in runbooks.GetAllAsync())
+            var jobContent = new AutomationJobCreateOrUpdateContent { RunbookName = runbookName };
+            
+            // Parse and add parameters if provided
+            if (!string.IsNullOrEmpty(parameters))
             {
-                if (rb.Data.Name.Equals(runbookName, StringComparison.OrdinalIgnoreCase))
+                try
                 {
-                    matchingRunbook = rb;
-                    break;
+                    var parametersDictionary = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, string>>(parameters);
+                    if (parametersDictionary != null)
+                    {
+                        foreach (var param in parametersDictionary)
+                        {
+                            jobContent.Parameters.Add(param.Key, param.Value);
+                            _logger.LogDebug("Added parameter {Key}: {Value}", param.Key, param.Value);
+                        }
+                    }
+                }
+                catch (System.Text.Json.JsonException ex)
+                {
+                    _logger.LogError(ex, "Failed to parse parameters JSON string: {Parameters}", parameters);
+                    throw new ArgumentException("Parameters must be a valid JSON string in the format {\"key\":\"value\"}", nameof(parameters), ex);
                 }
             }
 
-            if (matchingRunbook == null)
-                throw new Exception($"Runbook '{runbookName}' not found in the list of available runbooks!");
-
-            var jobName = Guid.NewGuid().ToString();
-            var jobContent = new AutomationJobCreateOrUpdateContent { RunbookName = matchingRunbook.Data.Name };
             var jobCollection = automationAccount.GetAutomationJobs();
+            var job = await jobCollection.CreateOrUpdateAsync(WaitUntil.Completed, Guid.NewGuid().ToString(), jobContent);
 
-            ArmOperation<AutomationJobResource> createJobOperation = await jobCollection.CreateOrUpdateAsync(
-                WaitUntil.Completed,
-                jobName,
-                jobContent);
+            var jobId = job.Value.Data.JobId.ToString() ?? throw new InvalidOperationException("Job ID cannot be null");
+            _logger.LogDebug("Started runbook job. JobId: {JobId}, RunbookName: {RunbookName}", jobId, runbookName);
 
-            AutomationJobResource job = createJobOperation.Value;
-            var jobId = job.Data!.Id;
-
-            if (string.IsNullOrEmpty(job.Data!.Id)) 
-                throw new InvalidOperationException("Job ID cannot be null or empty");
-
-            return (JobId: job.Data!.Id.ToString(), RunbookName: runbookName!);
+            return (jobId, runbookName);
         }
 
         public async Task<AutomationJobResource> GetJobStatusByIdAsync(string jobId)
@@ -118,7 +119,7 @@ namespace AzureAutomationLibrary
                 // Retrieve the Automation Account
                 var subscriptionResource = _armClient.GetSubscriptionResource(new ResourceIdentifier($"/subscriptions/{_subscriptionId}"));
                 ResourceGroupResource resourceGroup = await subscriptionResource.GetResourceGroupAsync(_resourceGroupName);
-                AutomationAccountResource automationAccount = await resourceGroup.GetAutomationAccountAsync(_automationAccountName);
+                var automationAccount = (await resourceGroup.GetAutomationAccountAsync(_automationAccountName)).Value;
 
                 // Get the job by its name
                 var job = await automationAccount.GetAutomationJobAsync(jobName);
@@ -126,8 +127,7 @@ namespace AzureAutomationLibrary
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"An error occurred while retrieving the job with ID '{jobId}'.");
-                Console.WriteLine($"Details: {ex.Message}");
+                _logger.LogError(ex, "An error occurred while retrieving the job with ID '{JobId}'", jobId);
                 throw;
             }
         }
@@ -145,38 +145,36 @@ namespace AzureAutomationLibrary
                 // Retrieve the Automation Account
                 var subscriptionResource = _armClient.GetSubscriptionResource(new ResourceIdentifier($"/subscriptions/{_subscriptionId}"));
                 ResourceGroupResource resourceGroup = await subscriptionResource.GetResourceGroupAsync(_resourceGroupName);
-                AutomationAccountResource automationAccount = await resourceGroup.GetAutomationAccountAsync(_automationAccountName);
+                var automationAccount = (await resourceGroup.GetAutomationAccountAsync(_automationAccountName)).Value;
 
                 // Get the job by its name
                 var job = await automationAccount.GetAutomationJobAsync(jobName);
+                var jobValue = job.Value;
 
                 // Ensure the job has completed before fetching output
-                if (job.Value.Data.Status != AutomationJobStatus.Completed)
+                if (jobValue.Data.Status != AutomationJobStatus.Completed)
                 {
-                    throw new InvalidOperationException($"Job '{jobId}' has not completed yet. Current status: {job.Value.Data.Status}");
+                    throw new InvalidOperationException($"Job '{jobId}' has not completed yet. Current status: {jobValue.Data.Status}");
                 }
 
                 // Fetch the job output
-                var output = await job.Value.GetOutputAsync();
-                return output;
+                var output = await jobValue.GetOutputAsync();
+                return output ?? string.Empty;
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"An error occurred while retrieving the output of job with ID '{jobId}'.");
-                Console.WriteLine($"Details: {ex.Message}");
+                _logger.LogError(ex, "An error occurred while retrieving the output of job with ID '{JobId}'", jobId);
                 throw;
             }
         }
 
-
-
-        private static async Task MonitorJobStatusAsync(AutomationJobResource job)
+        private async Task MonitorJobStatusAsync(AutomationJobResource job)
         {
             bool completed = false;
             while (!completed)
             {
                 job = await job.GetAsync(); // Refresh job state
-                Console.WriteLine($"Job Status: {job.Data.Status} at {DateTimeOffset.Now:HH:mm:ss}");
+                _logger.LogDebug("Job Status: {Status} at {Time}", job.Data.Status, DateTimeOffset.Now);
 
                 completed = job.Data.Status == AutomationJobStatus.Completed ||
                     job.Data.Status == AutomationJobStatus.Failed ||
@@ -189,9 +187,5 @@ namespace AzureAutomationLibrary
                 }
             }
         }
-
-
-
     }
-
 }

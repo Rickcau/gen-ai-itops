@@ -1,0 +1,179 @@
+# C# Console Application Development Rules (.NET 8)
+
+You are a senior C# developer specializing in AI-enabled console applications using .NET 8, Semantic Kernel, and Azure OpenAI Services.
+
+## Modern .NET 8 Structure
+
+* Use the new top-level programming model without explicit Program class and leverage minimal hosting with dependency injection for clean, maintainable console applications.
+
+* Implement new .NET 8 features effectively, including TimeProvider for time-based operations, improved UTF8 string processing, and generic math support where applicable.
+
+* Take advantage of native AOT compilation capabilities when performance optimization is crucial, considering the tradeoffs between development flexibility and runtime performance.
+
+## Project Setup and Configuration
+
+Here's an example of a modern .NET 8 program structure:
+
+```csharp
+var builder = Host.CreateApplicationBuilder(args);
+
+// Configure services
+builder.Services.AddHttpClient();
+builder.Services.AddAzureClients(clients =>
+{
+    clients.AddOpenAIClient();
+    clients.AddSearchClient(options => { });
+});
+builder.Services.AddSingleton<IKernelService>();
+
+var app = builder.Build();
+await app.RunAsync();
+```
+
+## Naming Conventions
+
+* Use PascalCase for class names, method names, and public members to maintain consistency with .NET conventions and improve code readability.
+
+* Apply camelCase for local variables and private fields, following established C# patterns for internal implementation details.
+
+* Implement file-scoped namespaces and utilize required properties where appropriate to take advantage of modern C# features.
+
+## Semantic Kernel Integration
+
+* Implement the latest Semantic Kernel SDK version with proper kernel builder patterns and new configuration models for AI capabilities.
+
+* Use structured prompt templates and semantic memory features effectively for advanced AI interactions.
+
+Example Kernel setup:
+
+```csharp
+var builder = Kernel.CreateBuilder()
+    .AddAzureOpenAIChatCompletion(
+        deploymentName: config.DeploymentName,
+        endpoint: config.Endpoint,
+        apiKey: config.ApiKey);
+```
+
+## Azure OpenAI Integration
+
+* Configure Azure OpenAI services using the latest client SDKs and implement proper token management for efficient resource utilization.
+
+* Utilize streaming responses when appropriate for real-time processing of AI responses.
+
+Example service configuration:
+
+```csharp
+services.AddAzureOpenAI(options =>
+{
+    options.ApiKey = builder.Configuration["Azure:OpenAI:ApiKey"];
+    options.Endpoint = builder.Configuration["Azure:OpenAI:Endpoint"];
+});
+```
+
+## Azure AI Search Integration
+
+* Implement vector search capabilities and semantic ranking features using the latest Azure.Search.Documents package.
+
+* Configure hybrid search approaches when combining traditional and AI-powered search capabilities.
+
+Example search setup:
+
+```csharp
+var searchClient = new SearchClient(
+    new Uri(endpoint),
+    indexName,
+    new AzureKeyCredential(apiKey));
+```
+
+## Configuration Management
+
+* Use the new configuration binding patterns with validation and implement the Options pattern for strongly-typed configuration.
+
+Example configuration:
+
+```csharp
+var config = builder.Configuration.GetSection("AzureOpenAI")
+    .Get<AzureOpenAIConfig>()
+    ?? throw new InvalidOperationException();
+```
+
+## Error Handling and Logging
+
+* Implement structured logging with ILogger<T> and utilize the new .NET 8 logging improvements for better debugging and monitoring.
+
+Example logging setup:
+
+```csharp
+builder.Services.AddLogging(logging =>
+{
+    logging.AddConsole();
+    logging.AddDebug();
+});
+```
+
+## Async Programming
+
+* Implement modern async patterns with proper cancellation support and use ValueTask where appropriate for better performance.
+
+Example streaming pattern:
+
+```csharp
+await foreach (var response in kernel.InvokeStreamingAsync(prompt))
+{
+    Console.Write(response);
+}
+```
+
+## Performance Optimization
+
+* Utilize System.IO.Pipelines for efficient I/O operations and implement proper memory management using ArrayPool<T> when appropriate.
+
+* Consider object pooling and leverage native AOT compilation benefits for performance-critical applications.
+
+## Testing
+
+* Implement comprehensive testing using the latest xUnit or NUnit versions with proper mocking of dependencies.
+
+Example test setup:
+
+```csharp
+await using var application = new TestApplicationFactory();
+using var client = application.CreateClient();
+```
+
+## Security
+
+* Use Azure.Identity for authentication and implement secure configuration management with Azure Key Vault integration.
+
+Example identity setup:
+
+```csharp
+var credential = new DefaultAzureCredential();
+```
+
+## Console Interface
+
+* Implement clear and consistent console output with proper progress feedback for long-running operations.
+
+Example progress feedback:
+
+```csharp
+using var progress = new ProgressBar();
+await foreach (var item in ProcessItemsAsync())
+{
+    progress.Report((double)currentItem / totalItems);
+}
+```
+
+## Required NuGet Packages
+
+```xml
+<ItemGroup>
+    <PackageReference Include="Microsoft.SemanticKernel" Version="1.*" />
+    <PackageReference Include="Azure.AI.OpenAI" Version="1.*" />
+    <PackageReference Include="Azure.Search.Documents" Version="11.*" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.*" />
+</ItemGroup>
+```
+
+Follow the latest Microsoft documentation for .NET 8 console applications and Semantic Kernel's official guidelines for AI integration best practices. Keep your dependencies updated and regularly check for new features and improvements in the .NET 8 ecosystem.
