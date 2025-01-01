@@ -1,0 +1,56 @@
+name: .NET CI
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'api-gen-ai-itops/**'
+      - 'ConsoleApp-**/**'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'api-gen-ai-itops/**'
+      - 'ConsoleApp-**/**'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        project: [
+          'api-gen-ai-itops',
+          'ConsoleApp-Az-Automation',
+          'ConsoleApp-Az-Check-Permissions',
+          'ConsoleApp-Build-Ai-Index',
+          'ConsoleApp-Chat-Bot'
+        ]
+
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: '8.0.x'
+
+    - name: Cache NuGet packages
+      uses: actions/cache@v3
+      with:
+        path: ~/.nuget/packages
+        key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+        restore-keys: |
+          ${{ runner.os }}-nuget-
+
+    - name: Restore dependencies
+      run: dotnet restore ${{ matrix.project }}
+
+    - name: Build
+      run: dotnet build ${{ matrix.project }} --configuration Release --no-restore
+
+    - name: Test
+      run: |
+        if [ -d "${{ matrix.project }}.Tests" ] || [ -d "${{ matrix.project }}/Tests" ]; then
+          dotnet test ${{ matrix.project }} --configuration Release --no-build --verbosity normal
+        else
+          echo "No tests found for ${{ matrix.project }}"
+        fi

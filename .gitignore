@@ -12,6 +12,7 @@ App.config
 *.user
 *.userosscache
 *.sln.docstates
+*.cursorrules
 
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
