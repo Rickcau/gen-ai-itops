@@ -5,12 +5,16 @@ on:
     branches: [ main ]
     paths:
       - 'api-gen-ai-itops/**'
-      - 'ConsoleApp-**/**'
+      - 'api-gen-ai-itops/*'
+      - 'ConsoleApp-*/**'
+      - 'ConsoleApp-*/*'
   pull_request:
     branches: [ main ]
     paths:
       - 'api-gen-ai-itops/**'
-      - 'ConsoleApp-**/**'
+      - 'api-gen-ai-itops/*'
+      - 'ConsoleApp-*/**'
+      - 'ConsoleApp-*/*'
 
 jobs:
   build:
