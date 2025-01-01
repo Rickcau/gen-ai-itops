@@ -1,3 +1,6 @@
+[![Next.js CI](https://github.com/Rickcau/gen-ai-itops/actions/workflows/dotnet-ci.yml/badge.svg)](https://github.com/Rickcau/gen-ai-itops/actions/workflows/dotnet-ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 # LICENSE
 The [MIT License](./LICENSE) applies to all the solutions / projects / examples included in this repository.
 
