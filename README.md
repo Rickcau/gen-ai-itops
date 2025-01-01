@@ -1,3 +1,6 @@
+# LICENSE
+The [MIT License](./LICENSE) applies to all the solutions / projects / examples included in this repository.
+
 # Generative AI Solution for IT Operations
 This solution will leverage Azure Automation and Runbooks for all Operations along with a GenAI ChatBot that allows users to request specific operations to be performed (e.g. List VMs, ShutDown VMs etc).  
 
