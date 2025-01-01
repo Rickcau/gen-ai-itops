@@ -37,7 +37,7 @@ namespace api_gen_ai_itops.Services
                 DateReported = dateReported
             });
 
-            return personDetail;
+            return personDetail ?? throw new KeyNotFoundException($"Person not found with name: {name}, age: {age}, dateReported: {dateReported}")
         }
 
         public async Task<int> UpdateMissingPerson(int id, DateTime dateFound)
