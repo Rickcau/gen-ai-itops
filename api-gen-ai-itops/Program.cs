@@ -23,6 +23,17 @@ var connectionString = configuration.GetValue<string>("DatabaseConnection") ?? t
 builder.Services.AddApplicationInsightsTelemetry();
 builder.Logging.AddConsole();
 
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowMyApp",
+        policy =>
+        {
+            policy.WithOrigins("http://localhost:3000", "https://localhost:3443", "https://localhost:3001")  // Remove the API URL and trailing slash
+                  .AllowAnyHeader()
+                  .AllowAnyMethod();
+        });
+});
+
 builder.Services.AddTransient<IAzureDbService>(s => new AzureDbService(connectionString));
 
 builder.Services.AddTransient<Kernel>(s =>
@@ -81,7 +92,7 @@ builder.Services.AddSwaggerGen(c =>
 });
 
 var app = builder.Build();
-app.UseMiddleware<ApiKeyMiddleware>();
+
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -91,7 +102,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-
+app.UseCors("AllowMyApp");
+app.UseMiddleware<ApiKeyMiddleware>();
 app.UseAuthorization();
 
 app.MapControllers();
