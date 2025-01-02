@@ -1,8 +1,6 @@
-[![Next.js CI](https://github.com/Rickcau/gen-ai-itops/actions/workflows/dotnet-ci.yml/badge.svg)](https://github.com/Rickcau/gen-ai-itops/actions/workflows/dotnet-ci.yml)
+[![Dotnet CI](https://github.com/Rickcau/gen-ai-itops/actions/workflows/dotnet-ci.yml/badge.svg)](https://github.com/Rickcau/gen-ai-itops/actions/workflows/dotnet-ci.yml)
 
-
-https://github.com/Rickcau/gen-ai-itops/actions/workflows/dotnet-ci.yml
-
+[![Next.js CI]([https://github.com/Rickcau/gen-ai-itops/actions/workflows/dotnet-ci.yml/badge.svg)](https://github.com/Rickcau/gen-ai-itops/actions/workflows/nextjs-ci.yml)
 
 # LICENSE
 The [MIT License](./LICENSE) applies to all the solutions / projects / examples included in this repository.
