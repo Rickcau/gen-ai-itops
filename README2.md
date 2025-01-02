@@ -57,6 +57,7 @@ This repository contains a comprehensive solution for automating IT operations u
 
 ## Documentation
 - Implementation details in `/notes/`
+- Important Notes in [`/ImportantNotes.md/`](./notes/ImportantNotes.md)
 - Runbook documentation in `RunBooks.md`
 - Architecture specifications in `/architecture/`
 - API documentation available in respective service directories
