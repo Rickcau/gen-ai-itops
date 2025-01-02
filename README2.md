@@ -1,5 +1,8 @@
 # Gen-AI-ITOps: Generative AI-Powered IT Operations Platform
+[![Dotnet CI](https://github.com/Rickcau/gen-ai-itops/actions/workflows/dotnet-ci.yml/badge.svg)](https://github.com/Rickcau/gen-ai-itops/actions/workflows/dotnet-ci.yml) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
+[![Next.js CI](https://github.com/Rickcau/gen-ai-itops/actions/workflows/nextjs-ci.yml/badge.svg)](https://github.com/Rickcau/gen-ai-itops/actions/workflows/nextjs-ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 ## Overview
 This repository contains a comprehensive solution for automating IT operations using Generative AI, Azure Automation, and modern web technologies. The platform enables users to interact with IT infrastructure through a natural language interface while maintaining proper security controls and role-based access.
 
