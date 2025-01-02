@@ -8,8 +8,11 @@
 # LICENSE
 The [MIT License](./LICENSE) applies to all the solutions / projects / examples included in this repository.
 
-# Generative AI Solution for IT Operations
-This solution will leverage Azure Automation and Runbooks for all Operations along with a GenAI ChatBot that allows users to request specific operations to be performed (e.g. List VMs, ShutDown VMs etc).  
+# Generative AI Solution for IT Operations Accelerator
+This **Accelerator** will leverage Azure Automation and Runbooks for all Operations along with a GenAI Chat Bot that allows users to request specific operations to be performed (e.g. List VMs, ShutDown VMs etc).  The goal of this **accelerator** is to help you standup a working IT Operations Chat Bot quickly so you can extend or add new capabilities quickly.
+
+The solution leverages Azure RBAC and managed identities for security purposes and the repository has GitHub Actions with LINTing to ensure nothing gets merged to main that would break the existing code base.
+
 
 ## Routine IT Infrastructure Tasks
 Please read **[this seciton](./notes/ImportantNotes.md)** for some very important details on Azure Automation / GitHub Actions.
