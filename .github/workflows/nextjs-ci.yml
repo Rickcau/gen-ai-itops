@@ -1,0 +1,60 @@
+name: Next.js CI
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ master ]
+    paths:
+      - 'it-ops-chatbot/**'
+  pull_request:
+    branches: [ master ]
+    paths:
+      - 'it-ops-chatbot/**'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: it-ops-chatbot
+
+    strategy:
+      matrix:
+        node-version: [18.x]
+
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v3
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+        cache-dependency-path: it-ops-chatbot/package-lock.json
+        
+    - name: Cache Next.js build
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.npm
+          ${{ github.workspace }}/it-ops-chatbot/.next/cache
+        key: ${{ runner.os }}-nextjs-${{ hashFiles('it-ops-chatbot/**/package-lock.json') }}-${{ hashFiles('it-ops-chatbot/**/*.js', 'it-ops-chatbot/**/*.jsx', 'it-ops-chatbot/**/*.ts', 'it-ops-chatbot/**/*.tsx') }}
+        restore-keys: |
+          ${{ runner.os }}-nextjs-${{ hashFiles('it-ops-chatbot/**/package-lock.json') }}-
+        
+    - name: Install dependencies
+      run: |
+        npm ci
+        npm install -g @typescript-eslint/parser@6.21.0 @typescript-eslint/eslint-plugin@6.21.0
+      
+    - name: Build
+      run: npm run build
+      env:
+        NEXT_PUBLIC_API_BASE_URL: ${{ secrets.NEXT_PUBLIC_API_BASE_URL }}
+        NEXT_PUBLIC_API_CONFIGURED: false
+        NEXT_PUBLIC_TEST_USER: testuser@myapp.com
+        NEXT_PUBLIC_API_KEY: 1234
+        
+    - name: Lint
+      run: npm run lint
