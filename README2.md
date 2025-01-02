@@ -56,7 +56,7 @@ This repository contains a comprehensive solution for automating IT operations u
 - Automated build and deployment processes
 
 ## Documentation
-- Implementation details in `/notes/`
+- Implementation details in [`/notes/`](./notes)
 - Important Notes in [`/ImportantNotes.md/`](./notes/ImportantNotes.md)
 - Runbook documentation in `RunBooks.md`
 - Architecture specifications in `/architecture/`
