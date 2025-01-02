@@ -58,6 +58,8 @@ This repository contains a comprehensive solution for automating IT operations u
 ## Documentation
 - Implementation details in [`/notes/`](./notes)
 - Important Notes in [`/ImportantNotes.md/`](./notes/ImportantNotes.md)
+- Just a few ideas / thoughts in [`/Thoughts.md/`](./notes/Thoughts.md)
+- Setup Details in [`/Setup.md/`](./notes/Setup.md)
 - Runbook documentation in [`RunBooks.md`](RunBooks.md)
 - Architecture specifications in [`/architecture/`](./architecture)
 - [`API documentation`](./api-gen-ai-itops) available in respective service directories
