@@ -40,7 +40,7 @@ git clone https://github.com/Rickcau/it-ops-chat-bot.git
 cd it-ops-chat-bot
 ```
 
-2. Install dependencies:
+2. Install dependencies:npm
 ```bash
 npm install
 ```

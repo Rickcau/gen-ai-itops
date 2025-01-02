@@ -29,7 +29,25 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "notes", "notes", "{EBE5962E
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ConsoleApp-Build-Ai-Index", "ConsoleApp-Build-Ai-Index\ConsoleApp-Build-Ai-Index.csproj", "{A1823B48-8FD8-47E1-A4E3-331286E8C5D4}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConsoleApp-Chat-Bot", "ConsoleApp-Chat-Bot\ConsoleApp-Chat-Bot.csproj", "{40979BE5-A7EF-45EF-8BD8-687BEDCDC1EE}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ConsoleApp-Chat-Bot", "ConsoleApp-Chat-Bot\ConsoleApp-Chat-Bot.csproj", "{40979BE5-A7EF-45EF-8BD8-687BEDCDC1EE}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "it-ops-chat-bot", "it-ops-chat-bot", "{2B362AEA-68FD-4101-B6EA-3F244AFC1A05}"
+	ProjectSection(SolutionItems) = preProject
+		it-ops-chatbot\.cursorrules = it-ops-chatbot\.cursorrules
+		it-ops-chatbot\.env.example = it-ops-chatbot\.env.example
+		it-ops-chatbot\.env.local = it-ops-chatbot\.env.local
+		it-ops-chatbot\.eslintrc.json = it-ops-chatbot\.eslintrc.json
+		it-ops-chatbot\components.json = it-ops-chatbot\components.json
+		it-ops-chatbot\LICENSE = it-ops-chatbot\LICENSE
+		it-ops-chatbot\next-env.d.ts = it-ops-chatbot\next-env.d.ts
+		it-ops-chatbot\next.config.js = it-ops-chatbot\next.config.js
+		it-ops-chatbot\package-lock.json = it-ops-chatbot\package-lock.json
+		it-ops-chatbot\package.json = it-ops-chatbot\package.json
+		it-ops-chatbot\postcss.config.js = it-ops-chatbot\postcss.config.js
+		it-ops-chatbot\README.md = it-ops-chatbot\README.md
+		it-ops-chatbot\tailwind.config.js = it-ops-chatbot\tailwind.config.js
+		it-ops-chatbot\tsconfig.json = it-ops-chatbot\tsconfig.json
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
