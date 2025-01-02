@@ -59,8 +59,8 @@ This repository contains a comprehensive solution for automating IT operations u
 - Implementation details in [`/notes/`](./notes)
 - Important Notes in [`/ImportantNotes.md/`](./notes/ImportantNotes.md)
 - Runbook documentation in [`RunBooks.md`](RunBooks.md)
-- Architecture specifications in `/architecture/`
-- API documentation available in respective service directories
+- Architecture specifications in [`/architecture/`](./architecture)
+- [`API documentation`](./api-gen-ai-itops) available in respective service directories
 
 ## License
 This project is licensed under the MIT License - see the LICENSE file for details. 
