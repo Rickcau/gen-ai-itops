@@ -1,5 +1,5 @@
 # Routine IT infrastructure Tasks
-- Azure Automation is typically a more straightforward and flexible choice for routuine IT infrastructure tasks such as starting or stopping Azure VMs on a schedule etc.  
+- Azure Automation is typically a more straightforward and flexible choice for routine IT infrastructure tasks such as starting or stopping Azure VMs on a schedule etc.
 
 # GitHub Actions
 GitHub Actions ( or other CI/CD pipelines) can perform similar tasks if needed, but they're generally geared toward **software builds**, **tests**, and **deployments** rather than ongoing IT ops.
