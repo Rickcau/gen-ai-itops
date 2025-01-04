@@ -173,7 +173,7 @@ ChatCompletionAgent orchestratorAgent = new ChatCompletionAgent
         When handling a NEW request related to IT Operations:
         1. State "I am forwarding the request to the IT Specialist for handling."
         2. Include the request details
-        3. End with "ROUTE_TO_RUNBOOK"
+        3. End with "ROUTE_TO_SPECIALIST"
         
         When receiving control after a status check:
         1. Ask "Is there anything else I can help you with?"
@@ -264,7 +264,7 @@ var selectionFunction2 = KernelFunctionFactory.CreateFromPrompt(
             
     Rules (in order of priority):
     1. For NEW user requests, return "{{{OrchestratorAgentName}}}"
-    2. After seeing "ROUTE_TO_RUNBOOK", keep returning "{{{RunbookAgentName}}}" until seeing "OPERATION_COMPLETE"
+    2. After seeing "ROUTE_TO_SPECIALIST", keep returning "{{{RunbookAgentName}}}" until seeing "OPERATION_COMPLETE"
     3. After seeing "OPERATION_COMPLETE", return "{{{OrchestratorAgentName}}}"
     4. For status check responses (yes/no), return "{{{RunbookAgentName}}}"
     5. If unsure, return "{{{OrchestratorAgentName}}}"
@@ -289,7 +289,7 @@ var selectionFunction = KernelFunctionFactory.CreateFromPrompt(
     1. If this is a NEW user request (not a response to a status check), return "{{{OrchestratorAgentName}}}"
     2. If the last message was a status check response from {{{RunbookAgentName}}}, return "{{{OrchestratorAgentName}}}" to ask if there's anything else
     3. If the user has responded "yes" to a status check and it hasn't been processed yet, return "{{{RunbookAgentName}}}"
-    4. After seeing "ROUTE_TO_RUNBOOK", return "{{{RunbookAgentName}}}" until seeing "OPERATION_COMPLETE"
+    4. After seeing "ROUTE_TO_SPECIALIST", return "{{{RunbookAgentName}}}" until seeing "OPERATION_COMPLETE"
     5. After "OPERATION_COMPLETE", return "{{{OrchestratorAgentName}}}" for wrap-up
     
     Check carefully:
@@ -311,7 +311,7 @@ var selectionFunction1 = KernelFunctionFactory.CreateFromPrompt(
             
     Selection rules:
     1. Initial user input or new requests always go to "{{{OrchestratorAgentName}}}"
-    2. After "{{{OrchestratorAgentName}}}" sends "ROUTE_TO_RUNBOOK", next message goes to "{{{RunbookAgentName}}}"
+    2. After "{{{OrchestratorAgentName}}}" sends "ROUTE_TO_SPECIALIST", next message goes to "{{{RunbookAgentName}}}"
     3. After "{{{RunbookAgentName}}}" completes an operation ("OPERATION_COMPLETE"), next message goes to "{{{OrchestratorAgentName}}}"
     4. For job status checks:
        - If user asks about status or says "yes" to a status check, route to "{{{RunbookAgentName}}}"
@@ -357,7 +357,7 @@ AgentGroupChat groupchat =
                         // The prompt variable name for the agents argument.
                         AgentsVariableName = "agents",
                         // The prompt variable name for the history argument.
-                        HistoryVariableName = "chatHistory",
+                        HistoryVariableName = "chatHistory2",
                     },
             }
     };
@@ -409,7 +409,7 @@ do
         */
 
         // Inside your main loop, before processing messages:
-        var hasBeenRouted = chatHistory.Any(m => m.Content?.Contains("ROUTE_TO_RUNBOOK") == true);
+        var hasBeenRouted = chatHistory.Any(m => m.Content?.Contains("ROUTE_TO_SPECIALIST") == true);
         var operationComplete = chatHistory.Any(m => m.Content?.Contains("OPERATION_COMPLETE") == true);
 
         currentGroupChat.ExecutionSettings = new()
@@ -472,7 +472,7 @@ do
 
                 // Filter out the control messages from user display
                 var displayContent = response.Content!
-                    .Replace("ROUTE_TO_RUNBOOK", "")
+                    .Replace("ROUTE_TO_SPECIALIST", "")
                     .Replace("OPERATION_COMPLETE", "")
                     .Replace("DONE!", "")
                     .Trim();

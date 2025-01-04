@@ -7,19 +7,14 @@ namespace api_gen_ai_itops.Services
     {
         ChatHistory GetOrCreateChatHistory(string sessionId);
         void CleanupOldHistories();
+        bool ClearChatHistory(string sessionId);
     }
 
     public class ChatHistoryManager : IChatHistoryManager
     {
         private readonly ConcurrentDictionary<string, (ChatHistory History, DateTime LastAccessed)> _chatHistories
             = new ConcurrentDictionary<string, (ChatHistory, DateTime)>();
-        private readonly string _systemMessage;
         private readonly TimeSpan _expirationTime = TimeSpan.FromHours(1); // Adjust as needed
-
-        public ChatHistoryManager(string systemMessage)
-        {
-            _systemMessage = systemMessage;
-        }
 
         public ChatHistory GetOrCreateChatHistory(string sessionId)
         {
@@ -33,9 +28,7 @@ namespace api_gen_ai_itops.Services
 
         private ChatHistory CreateNewChatHistory()
         {
-            var chatHistory = new ChatHistory();
-            chatHistory.AddSystemMessage(_systemMessage);
-            return chatHistory;
+            return new ChatHistory();
         }
 
         public void CleanupOldHistories()
@@ -48,6 +41,13 @@ namespace api_gen_ai_itops.Services
                     _chatHistories.TryRemove(key, out _);
                 }
             }
+        }
+
+        // added method to allow the removal of a ChatHistory for a given session,
+        // can can be helpful when testing how the chathistory is impacting the responses
+        public bool ClearChatHistory(string sessionId)
+        {
+            return _chatHistories.TryRemove(sessionId, out _);
         }
     }
 }

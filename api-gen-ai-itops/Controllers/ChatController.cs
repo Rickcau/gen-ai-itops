@@ -8,6 +8,21 @@ using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 using Microsoft.SemanticKernel.Connectors.OpenAI;
 using System.Net.Mime;
+using Helper.AzureOpenAISearchConfiguration;
+using Plugins;
+using Helper.ApprovalTermStrategy;
+using Helper.AgentContainer;
+using Microsoft.SemanticKernel.Agents;
+using Microsoft.Extensions.Logging;
+using Microsoft.Identity.Client.Platforms.Features.DesktopOs.Kerberos;
+using Azure.Identity;
+using System.Net;
+using Azure.Core;
+using Microsoft.SemanticKernel.Agents.Chat;
+using System.ComponentModel;
+using System.Xml.Linq;
+using System;
+using Microsoft.AspNetCore.SignalR.Protocol;
 
 namespace api_gen_ai_itops.Controllers
 {
@@ -16,31 +31,32 @@ namespace api_gen_ai_itops.Controllers
     public class ChatController : ControllerBase
     {
         private readonly ILogger<ChatController> _logger;
-        private readonly Kernel _kernel;
+        private readonly ILoggerFactory _loggerFactory;
         private readonly IChatCompletionService _chat;
+        private readonly Kernel _kernel;
+        private readonly Configuration _configuration;
         private readonly IChatHistoryManager _chatHistoryManager;
-        private readonly IAzureDbService _azureDbService;
-        private readonly string _connectionString;
-        private readonly string _databaseDescription;
-        private readonly string _tables;
+        private readonly AISearchPlugin _aiSearchPlugin;
+        private readonly RunbookPlugin _runbookPlugin;
 
         public ChatController(
             ILogger<ChatController> logger,
-            IConfiguration configuration,
-            Kernel kernel,
+            ILoggerFactory loggerFactory,
             IChatCompletionService chat,
-            IChatHistoryManager chathistorymanager,
-            IAzureDbService azuredbservice)
+            Kernel kernel,
+            Configuration configuration,
+            IChatHistoryManager chatHistoryManager,
+            AISearchPlugin aiSearchPlugin,
+            RunbookPlugin runbookPlugin)
         {
-            _kernel = kernel;
-            _chat = chat;
-            _chatHistoryManager = chathistorymanager;
             _logger = logger;
-            _azureDbService = azuredbservice;
-
-            _connectionString = configuration.GetValue<string>("DatabaseConnection") ?? throw new ArgumentNullException("DatabaseConnection");
-            _databaseDescription = configuration.GetValue<string>("DatabaseDescription") ?? throw new ArgumentNullException("DatabaseDescription");
-            _tables = configuration.GetValue<string>("Tables") ?? throw new ArgumentNullException("Tables");
+            _loggerFactory = loggerFactory;
+            _chat = chat;
+            _kernel = kernel;
+            _configuration = configuration;
+            _chatHistoryManager = chatHistoryManager;
+            _aiSearchPlugin = aiSearchPlugin;
+            _runbookPlugin = runbookPlugin;
         }
 
         [HttpPost]
@@ -50,13 +66,11 @@ namespace api_gen_ai_itops.Controllers
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> Post([FromBody] ChatProviderRequest chatRequest)
         {
-            var response = new ChatProviderResponse();
-
+            _logger.LogDebug("Starting Chat with debug mode enabled");
             try
             {
                 if (string.IsNullOrEmpty(chatRequest.SessionId))
                 {
-                    // needed for new chats
                     chatRequest.SessionId = Guid.NewGuid().ToString();
                 }
 
@@ -69,69 +83,28 @@ namespace api_gen_ai_itops.Controllers
                 var sessionId = chatRequest.SessionId;
                 var chatHistory = _chatHistoryManager.GetOrCreateChatHistory(sessionId);
 
-                // example sql for calculating median                
-                var missingPersonsMedianAgeExample = $$$"""### SQL Median Age Example: Below is an example of how to build a SQL Statement to return the median age for missing persons. ### ::: Example SQL ::: WITH AgeRanking AS (     SELECT Age,            PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY Age) OVER () AS MedianAge    FROM MissingPersons    WHERE Age IS NOT NULL) SELECT DISTINCT MedianAgeFROM AgeRanking; """;
+                // Create agent container with all necessary dependencies
+                var agentContainer = new AgentContainer(_chat, _kernel, _aiSearchPlugin, _runbookPlugin);
 
-                _kernel.ImportPluginFromObject(new DBQueryPlugin(_azureDbService));
+                // Process the chat request with existing history
+                var response = await agentContainer.ProcessChatRequestAsync(chatRequest.Prompt, chatHistory);
 
-               //  var jsonSchema = await GetDatabaseSchemaAsync();
-
-                //chatHistory.AddUserMessage(missingPersonsMedianAgeExample);
-               // chatHistory.AddUserMessage(NLPSqlPluginPrompts.GetNLPToSQLSystemPrompt(jsonSchema));
+                // Update the session chat history with the new messages
                 chatHistory.AddUserMessage(chatRequest.Prompt);
+                if (!string.IsNullOrWhiteSpace(response.AssistantResponse))
+                {
+                    chatHistory.AddAssistantMessage(response.AssistantResponse);
+                }
+                if (!string.IsNullOrWhiteSpace(response.SpecialistResponse))
+                {
+                    chatHistory.AddAssistantMessage(response.SpecialistResponse);
+                }
 
-                ChatMessageContent? result = null;
-
-                result = await _chat.GetChatMessageContentAsync(
-                      chatHistory,
-                      executionSettings: new OpenAIPromptExecutionSettings { Temperature = 0.8, TopP = 0.0, ToolCallBehavior = ToolCallBehavior.AutoInvokeKernelFunctions },
-                      kernel: _kernel);
-
-                response.ChatResponse = result.Content;
+                return new OkObjectResult(response);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error processing chat request");
-                return StatusCode(500, "Internal server error.");
-            }
-
-            return new OkObjectResult(response);
-        }
-
-        [HttpPatch("patch-missing-person")]
-        [Consumes(MediaTypeNames.Application.Json)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        [ProducesResponseType(StatusCodes.Status204NoContent)]
-        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<IActionResult> Patch([FromBody] MissingPersonFoundRequest request)
-        {
-            try
-            {
-                _logger.LogInformation("Incoming request: {MissingPersonFoundRequest}", request);
-
-                if (!ModelState.IsValid)
-                {
-                    return BadRequest(ModelState);
-                }
-
-                var person = await _azureDbService.GetMissingPerson(request.Name.Trim().ToLower(), request.Age, request.DateReported);
-
-                if (person == null)
-                {
-                    _logger.LogInformation($"Pissing person not found in the database. Name:{request.Name}");
-                    return NotFound();
-                }
-
-                var updated = await _azureDbService.UpdateMissingPerson(person.Id, request.DateFound);
-
-                _logger.LogInformation($"Updated missing person. Id:{person.Id} Name:{person.Name}");
-
-                return NoContent();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error patching missing person.");
                 return StatusCode(500, "Internal server error.");
             }
         }

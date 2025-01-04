@@ -5,44 +5,115 @@ using api_gen_ai_itops.Services;
 using Microsoft.OpenApi.Models;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
+using Helper.AzureOpenAISearchConfiguration;
+using Microsoft.Extensions.Http.Resilience;
+using Microsoft.Extensions.Http;
+using Azure.Identity;
+using Azure.Core;
+using Plugins;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Configuration
     .SetBasePath(Directory.GetCurrentDirectory())
     .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
-    .AddJsonFile("appsettings.Local.json", optional: true, reloadOnChange: true); // Add this line
+    .AddJsonFile("appsettings.Local.json", optional: true, reloadOnChange: true);
 
-var configuration = builder.Configuration;
-var apiDeploymentName = configuration.GetValue<string>("AzureOpenAiDeploymentName") ?? throw new ArgumentException("The AzureOpenAiDeploymentName is not configured or is empty.");
-var apiEndpoint = configuration.GetValue<string>("AzureOpenAiEndpoint") ?? throw new ArgumentException("The AzureOpenAiEndpoint is not configured or is empty.");
-var apiKey = configuration.GetValue<string>("AzureOpenAiKey") ?? throw new ArgumentException("The AzureOpenAiKey is not configured or is empty.");
-var connectionString = configuration.GetValue<string>("DatabaseConnection") ?? throw new ArgumentException("The DatabaseConnection is not configured or is empty.");
+// RDC Old var configuration = builder.Configuration;
+// RDC Old var apiDeploymentName = configuration.GetValue<string>("AzureOpenAiDeploymentName") ?? throw new ArgumentException("The AzureOpenAiDeploymentName is not configured or is empty.");
+// RDC Old var apiEndpoint = configuration.GetValue<string>("AzureOpenAiEndpoint") ?? throw new ArgumentException("The AzureOpenAiEndpoint is not configured or is empty.");
+// RDC Old var apiKey = configuration.GetValue<string>("AzureOpenAiKey") ?? throw new ArgumentException("The AzureOpenAiKey is not configured or is empty.");
+// RDC Old var connectionString = configuration.GetValue<string>("DatabaseConnection") ?? throw new ArgumentException("The DatabaseConnection is not configured or is empty.");
+
+// Configure and validate settings
+var config = new Configuration();
+builder.Configuration.Bind(config);
+config.Validate();
+
+// Configure Azure credential based on environment
+TokenCredential azureCredential;
+if (builder.Environment.IsDevelopment())
+{
+    azureCredential = new InteractiveBrowserCredential();
+}
+else
+{
+    // Use Managed Identity in production
+    if (string.IsNullOrEmpty(config.AzureManagedIdentity))
+        throw new ArgumentException("AzureManagedIdentity is not configured");
+    
+    azureCredential = new ManagedIdentityCredential(config.AzureManagedIdentity);
+}
+
+// Register the credential and plugins as singletons
+builder.Services.AddSingleton<TokenCredential>(azureCredential);
+builder.Services.AddSingleton<AISearchPlugin>(sp => 
+    new AISearchPlugin(
+        sp.GetRequiredService<Configuration>(), 
+        azureCredential, 
+        sp.GetRequiredService<ILogger<AISearchPlugin>>()
+    ));
+builder.Services.AddSingleton<RunbookPlugin>(sp => 
+    new RunbookPlugin(
+        sp.GetRequiredService<Configuration>(), 
+        azureCredential, 
+        sp.GetRequiredService<ILogger<RunbookPlugin>>()
+    ));
 
 // Add services to the container.
-builder.Services.AddApplicationInsightsTelemetry();
-builder.Logging.AddConsole();
+// RDC Old builder.Services.AddApplicationInsightsTelemetry();
+// RDC Old builder.Logging.AddConsole();
+builder.Services.AddApplicationInsightsTelemetry(options =>
+{
+    options.ConnectionString = config.AzureAppInsights;
+});
+builder.Services.AddLogging(logging =>
+{
+    if (config.DebugMode)
+    {
+        logging.SetMinimumLevel(LogLevel.Debug);
+    }
+});
+
+// Configure global HTTP client defaults
+builder.Services.ConfigureHttpClientDefaults(http =>
+{
+    http.AddStandardResilienceHandler().Configure(options =>
+    {
+        options.Retry.MaxRetryAttempts = 1;
+        options.Retry.Delay = TimeSpan.FromSeconds(2);
+        options.AttemptTimeout.Timeout = TimeSpan.FromSeconds(10);
+    });
+});
+
+// Register Configuration as a singleton
+builder.Services.AddSingleton(config);
 
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowMyApp",
         policy =>
         {
-            policy.WithOrigins("http://localhost:3000", "https://localhost:3443", "https://localhost:3001")  // Remove the API URL and trailing slash
+            // RDC Old policy.WithOrigins("http://localhost:3000", "https://localhost:3443", "https://localhost:3001")  // Remove the API URL and trailing slash
+            policy.WithOrigins("http://localhost:3000", "https://localhost:3443", "https://localhost:3001")
                   .AllowAnyHeader()
                   .AllowAnyMethod();
         });
 });
 
-builder.Services.AddTransient<IAzureDbService>(s => new AzureDbService(connectionString));
+// RDC Old builder.Services.AddTransient<IAzureDbService>(s => new AzureDbService(connectionString));
+builder.Services.AddTransient<IAzureDbService>(s => 
+    new AzureDbService(config.DatabaseConnection ?? throw new ArgumentException("DatabaseConnection is not configured")));
 
 builder.Services.AddTransient<Kernel>(s =>
 {
     var builder = Kernel.CreateBuilder();
+    // RDC Old builder.AddAzureOpenAIChatCompletion(apiDeploymentName, apiEndpoint, apiKey);
     builder.AddAzureOpenAIChatCompletion(
-        apiDeploymentName,
-        apiEndpoint,
-        apiKey);
+        config.AzureOpenAIDeployment ?? throw new ArgumentException("AzureOpenAIDeployment is not configured"),
+        config.AzureOpenAIEndpoint ?? throw new ArgumentException("AzureOpenAIEndpoint is not configured"),
+        config.AzureOpenAIApiKey ?? throw new ArgumentException("AzureOpenAIApiKey is not configured"),
+        serviceId: "azure-openai");
 
     return builder.Build();
 });
@@ -50,11 +121,7 @@ builder.Services.AddTransient<Kernel>(s =>
 builder.Services.AddSingleton<IChatCompletionService>(sp =>
                      sp.GetRequiredService<Kernel>().GetRequiredService<IChatCompletionService>());
 
-builder.Services.AddSingleton<IChatHistoryManager>(sp =>
-{
-    string systemmsg = CorePrompts.GetSystemPromptTest();
-    return new ChatHistoryManager(systemmsg);
-});
+builder.Services.AddSingleton<api_gen_ai_itops.Services.IChatHistoryManager, ChatHistoryManager>();
 
 builder.Services.AddHostedService<ChatHistoryCleanupService>();
 
@@ -92,6 +159,7 @@ builder.Services.AddSwaggerGen(c =>
 });
 
 var app = builder.Build();
+
 
 
 // Configure the HTTP request pipeline.
