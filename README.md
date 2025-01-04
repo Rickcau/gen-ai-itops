@@ -4,7 +4,7 @@
 [![Next.js CI](https://github.com/Rickcau/gen-ai-itops/actions/workflows/nextjs-ci.yml/badge.svg)](https://github.com/Rickcau/gen-ai-itops/actions/workflows/nextjs-ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 ## Overview
-This repository contains a comprehensive solution for automating IT operations using Generative AI, Azure Automation, and modern web technologies. The platform enables users to interact with IT infrastructure through a natural language interface while maintaining proper security controls and role-based access.
+This repository contains a comprehensive solution for automating IT operations using Generative AI, Azure Automation, GitHub Workflows, and modern web technologies. The platform enables users to interact with IT infrastructure through a natural language interface while maintaining proper security controls and role-based access.
 
 ## Key Components
 
@@ -64,6 +64,11 @@ This repository contains a comprehensive solution for automating IT operations u
 - Runbook documentation in [`RunBooks.md`](RunBooks.md)
 - Architecture specifications in [`/architecture/`](./architecture)
 - [`API documentation`](./api-gen-ai-itops) available in respective service directories
+
+## Additional Work that is needed
+- Add additional logic to the Console-Build-AI-Index which enumerates the GitHub Workflows that the users have access to
+- More work is needed for the GitHub integration as the platform does not provide the robust capabilities that Azure Automation has
+- Determining how to lock down access to varioaus GitHub actions would be needed.
 
 ## License
 This project is licensed under the MIT License - see the LICENSE file for details. 
