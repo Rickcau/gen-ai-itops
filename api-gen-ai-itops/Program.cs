@@ -59,6 +59,11 @@ builder.Services.AddSingleton<RunbookPlugin>(sp =>
         azureCredential, 
         sp.GetRequiredService<ILogger<RunbookPlugin>>()
     ));
+builder.Services.AddSingleton<GitHubWorkflowPlugin>(sp => 
+    new GitHubWorkflowPlugin(
+        sp.GetRequiredService<Configuration>(),
+        sp.GetRequiredService<ILogger<GitHubWorkflowPlugin>>()
+    ));
 
 // Add services to the container.
 // RDC Old builder.Services.AddApplicationInsightsTelemetry();

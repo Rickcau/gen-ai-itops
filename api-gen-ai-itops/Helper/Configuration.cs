@@ -131,6 +131,15 @@ namespace Helper.AzureOpenAISearchConfiguration
         [ConfigurationKeyName("LOG_LEVEL")]
         public string? LogLevel { get; set; }
 
+        [ConfigurationKeyName("GITHUB_TOKEN")]
+        public string? GitHubToken { get; set; }
+
+        [ConfigurationKeyName("GITHUB_OWNER")]
+        public string? GitHubOwner { get; set; }
+
+        [ConfigurationKeyName("GITHUB_REPOSITORY")]
+        public string? GitHubRepository { get; set; }
+
         /// <summary>
         /// Validate the configuration and set applicable defaults if necessary
         /// </summary>
@@ -166,6 +175,24 @@ namespace Helper.AzureOpenAISearchConfiguration
             {
                 AzureOpenAIEmbeddingDimensions = "1536";
             }
+
+            if (string.IsNullOrEmpty(AzureSubscriptionId))
+                throw new ArgumentException("Azure Subscription ID is not configured");
+
+            if (string.IsNullOrEmpty(AzureAutomationAccountName))
+                throw new ArgumentException("Azure Automation Account Name is not configured");
+
+            if (string.IsNullOrEmpty(AzureAutomationResourceGroup))
+                throw new ArgumentException("Azure Automation Resource Group is not configured");
+
+            if (string.IsNullOrEmpty(GitHubToken))
+                throw new ArgumentException("GitHub Token is not configured");
+
+            if (string.IsNullOrEmpty(GitHubOwner))
+                throw new ArgumentException("GitHub Owner is not configured");
+
+            if (string.IsNullOrEmpty(GitHubRepository))
+                throw new ArgumentException("GitHub Repository is not configured");
         }
     }
 }

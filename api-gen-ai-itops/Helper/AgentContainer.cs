@@ -31,8 +31,10 @@ namespace Helper.AgentContainer
         private readonly Kernel _kernel;
         private readonly AISearchPlugin _aiSearchPlugin;
         private readonly RunbookPlugin _runbookPlugin;
+        private readonly GitHubWorkflowPlugin _gitHubWorkflowPlugin;
         private const string AssistantAgentName = "Assistant";
         private const string SpecialistAgentName = "Specialist";
+
 
         /// <summary>
         /// Initializes a new instance of the AgentContainer class.
@@ -41,16 +43,19 @@ namespace Helper.AgentContainer
         /// <param name="kernel">The semantic kernel instance for agent operations.</param>
         /// <param name="aiSearchPlugin">The AI search plugin for the specialist agent.</param>
         /// <param name="runbookPlugin">The runbook plugin for the specialist agent.</param>
+        /// <param name="gitHubWorkflowPlugin">The GitHub workflow plugin for the specialist agent.</param>
         public AgentContainer(
             IChatCompletionService chatCompletionService, 
             Kernel kernel,
             AISearchPlugin aiSearchPlugin,
-            RunbookPlugin runbookPlugin)
+            RunbookPlugin runbookPlugin,
+            GitHubWorkflowPlugin gitHubWorkflowPlugin)
         {
             _chatCompletionService = chatCompletionService;
             _kernel = kernel;
             _aiSearchPlugin = aiSearchPlugin;
             _runbookPlugin = runbookPlugin;
+            _gitHubWorkflowPlugin = gitHubWorkflowPlugin;
         }
 
         /// <summary>
@@ -171,13 +176,13 @@ namespace Helper.AgentContainer
             {
                 Name = SpecialistAgentName,
                 Instructions = """
-                    You are an Specialist Agent specialized in IT Operations. Your tasks include:
-                    1. Search for the IT Operations available by calling the AISearchPlugin 
-                    2. Processing IT operation requests by Calling the RunbookPlugin (if not available, don't try to call it) 
+                    You are a Specialist Agent specialized in IT Operations. Your tasks include:
+                    1. Processing IT operation requests by calling the RunbookPlugin (if not available, don't try to call it)
+                    2. Managing GitHub workflows using the GitHubWorkflowPlugin
                     3. Executing necessary system commands
                     4. Providing detailed status updates
-                    
-                    For each request:
+
+                    For Runbook operations:
                     1. If the request is to check a job status:
                        - First, look in the recent chat history for any mentioned Job IDs
                        - If found in history, use that Job ID automatically
@@ -185,16 +190,34 @@ namespace Helper.AgentContainer
                        - Call CheckJobStatus with only the GUID portion
                        - Present the status and output in a clear format
                        - End with "OPERATION_COMPLETE"
-                    2. For other requests:
-                       - Invoke the AISearchPlugin to find the operations available
+                    2. For other Runbook requests:
+                       - First, invoke the AISearchPlugin to find the operations available
                        - Based on the operations found, ask for additional details if needed
                        - Execute the appropriate runbook
                        - After providing the job ID, ask if the user would like to check the status
                        - End with "OPERATION_COMPLETE"
 
+                    For GitHub workflow operations:
+                    1. If the request is about GitHub workflows:
+                       - Use ListWorkflows to show available workflows
+                       - Help the user select the appropriate workflow
+                       - End with "OPERATION_COMPLETE"
+                    2. If triggering a workflow:
+                       - Ask for any required inputs
+                       - Use TriggerWorkflow with the workflow ID/name
+                       - After triggering, provide the Run ID and ask if they want to check status
+                       - End with "OPERATION_COMPLETE"
+                    3. If checking workflow status:
+                       - Look in chat history for recent Run IDs
+                       - If found, use that Run ID automatically
+                       - If not found, ask the user for the Run ID
+                       - Use CheckWorkflowStatus to get current status
+                       - Present the status, jobs, and logs clearly
+                       - End with "OPERATION_COMPLETE"
+
                     Important: 
-                    - Always scan the chat history for context, especially Job IDs
-                    - When checking job status, only pass the GUID portion of the job ID
+                    - Always scan the chat history for context, especially Job IDs and Run IDs
+                    - When checking job status, only pass the GUID portion of IDs
                     - You must ALWAYS end your response with "OPERATION_COMPLETE"
                     - Never end your response without "OPERATION_COMPLETE"
                     """,
@@ -211,6 +234,7 @@ namespace Helper.AgentContainer
             // Add plugins to the specialist agent
             agent.Kernel.Plugins.Add(KernelPluginFactory.CreateFromObject(_aiSearchPlugin));
             agent.Kernel.Plugins.Add(KernelPluginFactory.CreateFromObject(_runbookPlugin));
+            agent.Kernel.Plugins.Add(KernelPluginFactory.CreateFromObject(_gitHubWorkflowPlugin));
 
             return agent;
         }
