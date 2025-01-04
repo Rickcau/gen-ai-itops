@@ -95,22 +95,30 @@ export default function ChatInterface() {
         const data: ChatApiResponse = await response.json()
         console.log('API Response:', data)
 
+        let newMessages = [...chatState.messages]
+        
+        // Add Assistant response if present
+        if (data.assistantResponse) {
+          newMessages.push({
+            id: nanoid(),
+            role: 'assistant',
+            content: data.assistantResponse
+          })
+        }
+
+        // Add Specialist response if present
+        if (data.specialistResponse) {
+          newMessages.push({
+            id: nanoid(),
+            role: 'specialist',
+            content: data.specialistResponse
+          })
+        }
+
         // Update state with all new messages at once
         setChatState({
           isLoading: false,
-          messages: [
-            ...chatState.messages,
-            ...(data.assistantResponse ? [{
-              id: nanoid(),
-              role: 'assistant',
-              content: data.assistantResponse
-            }] : []),
-            ...(data.specialistResponse ? [{
-              id: nanoid(),
-              role: 'specialist',
-              content: data.specialistResponse
-            }] : [])
-          ]
+          messages: newMessages
         })
 
       } catch (error) {
@@ -186,22 +194,30 @@ export default function ChatInterface() {
         const data = await response.json()
         console.log('API Response:', data)
 
+        let newMessages = [...chatState.messages]
+        
+        // Add Assistant response if present
+        if (data.assistantResponse) {
+          newMessages.push({
+            id: nanoid(),
+            role: 'assistant',
+            content: data.assistantResponse
+          })
+        }
+
+        // Add Specialist response if present
+        if (data.specialistResponse) {
+          newMessages.push({
+            id: nanoid(),
+            role: 'specialist',
+            content: data.specialistResponse
+          })
+        }
+
         // Update state with all new messages at once
         setChatState({
           isLoading: false,
-          messages: [
-            ...chatState.messages,
-            ...(data.assistantResponse ? [{
-              id: nanoid(),
-              role: 'assistant',
-              content: data.assistantResponse
-            }] : []),
-            ...(data.specialistResponse ? [{
-              id: nanoid(),
-              role: 'specialist',
-              content: data.specialistResponse
-            }] : [])
-          ]
+          messages: newMessages
         })
 
       } catch (error) {
