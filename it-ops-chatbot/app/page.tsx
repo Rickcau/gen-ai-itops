@@ -38,7 +38,7 @@ export default function ChatInterface() {
     const userMessage: Message = {
       id: nanoid(),
       content: input,
-      role: 'user'
+      role: 'user' as const
     }
 
     setChatState(prev => ({
@@ -102,12 +102,12 @@ export default function ChatInterface() {
             ...chatState.messages,
             ...(data.assistantResponse ? [{
               id: nanoid(),
-              role: 'assistant',
+              role: 'assistant' as const,
               content: data.assistantResponse
             }] : []),
             ...(data.specialistResponse ? [{
               id: nanoid(),
-              role: 'specialist',
+              role: 'specialist' as const,
               content: data.specialistResponse
             }] : [])
           ]
@@ -193,12 +193,12 @@ export default function ChatInterface() {
             ...chatState.messages,
             ...(data.assistantResponse ? [{
               id: nanoid(),
-              role: 'assistant',
+              role: 'assistant' as const,
               content: data.assistantResponse
             }] : []),
             ...(data.specialistResponse ? [{
               id: nanoid(),
-              role: 'specialist',
+              role: 'specialist' as const,
               content: data.specialistResponse
             }] : [])
           ]
