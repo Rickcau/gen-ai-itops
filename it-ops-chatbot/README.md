@@ -5,7 +5,7 @@ A modern web interface for managing Azure VMs through natural language interacti
 [![Next.js CI](https://github.com/Rickcau/gen-ai-itops/actions/workflows/nextjs-ci.yml/badge.svg)](https://github.com/Rickcau/gen-ai-itops/actions/workflows/nextjs-ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-## Features test
+## Features
 
 - 🤖 Natural language VM management
 - 💻 Pre-built actions for common VM operations
