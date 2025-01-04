@@ -21,10 +21,10 @@ This repository contains a comprehensive solution for automating IT operations u
 - Job status monitoring and reporting
 
 ### 3. Console Applications
-- `/ConsoleApp-Chat-Bot/`: CLI interface for the chatbot
+- `/ConsoleApp-Chat-Bot/`: CLI interface which demostrate ChatBot capabilities that are used in the API Layer
 - `/ConsoleApp-Build-Ai-Index/`: Tools for building AI search indexes
-- `/ConsoleApp-Az-Automation/`: Azure Automation management utilities
-- `/ConsoleApp-Az-Check-Permissions/`: Permission verification tools
+- `/ConsoleApp-Az-Automation/`: Azure Automation management utilities / demostrates RBAC with Azure Automation
+- `/ConsoleApp-Az-Check-Permissions/`: Permission verification tools / denostrates how custom RBAC roles can be used with the solution.
 
 ### 4. API Layer
 - `/api-gen-ai-itops/`: Backend API services
