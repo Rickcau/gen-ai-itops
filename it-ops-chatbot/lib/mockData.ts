@@ -1,76 +1,63 @@
 import type { Message } from '@/types/chat'
 
-export const mockChatResponses: { [key: string]: Message[] } = {
-  'hello': [
+export const mockChatResponses: Record<string, Message[]> = {
+  'list workflows': [
     {
-      id: '1',
+      id: 'mock-1',
       role: 'assistant',
-      content: 'Hello! How can I help you with VM management today?'
+      content: 'I am forwarding the request to the IT Specialist for handling.'
+    },
+    {
+      id: 'mock-2',
+      role: 'specialist',
+      content: `Available workflows in rickcau/gen-ai-itops:
+- Name: CI/CD Pipeline
+  ID: 12345
+  State: active
+  Path: .github/workflows/ci-cd.yml`
     }
   ],
   'default': [
     {
-      id: '1',
+      id: 'mock-1',
       role: 'assistant',
-      content: 'I understand you need help with VM management. Could you please be more specific about what you\'d like to do?'
+      content: 'I am forwarding the request to the IT Specialist for handling.'
+    },
+    {
+      id: 'mock-2',
+      role: 'specialist',
+      content: 'I understand you need help with IT operations. Could you please provide more details about what you would like to do?'
     }
   ]
 }
 
-export const mockActionResponses: { [key: string]: Message[] } = {
-  'Can you list all VMs?': [
+export const mockActionResponses: Record<string, Message[]> = {
+  'list workflows': [
     {
-      id: '1',
+      id: 'mock-1',
       role: 'assistant',
-      content: 'Here are your VMs:\n\n- VM-DEV-01 (Running)\n- VM-PROD-01 (Running)\n- VM-TEST-01 (Stopped)'
-    }
-  ],
-  'Can you start VM {vmName} in resource group {resourceGroup}?': [
-    {
-      id: '1',
-      role: 'assistant',
-      content: 'Starting the VM. This may take a few minutes...'
+      content: 'I am forwarding the request to the IT Specialist for handling.'
     },
     {
-      id: '2',
-      role: 'assistant',
-      content: 'VM started successfully!'
-    }
-  ],
-  'Can you stop VM {vmName} in resource group {resourceGroup}?': [
-    {
-      id: '1',
-      role: 'assistant',
-      content: 'Stopping the VM. This may take a few minutes...'
-    },
-    {
-      id: '2',
-      role: 'assistant',
-      content: 'VM stopped successfully!'
-    }
-  ],
-  'Can you restart VM {vmName} in resource group {resourceGroup}?': [
-    {
-      id: '1',
-      role: 'assistant',
-      content: 'Restarting the VM. This may take a few minutes...'
-    },
-    {
-      id: '2',
-      role: 'assistant',
-      content: 'VM restarted successfully!'
+      id: 'mock-2',
+      role: 'specialist',
+      content: `Available workflows in rickcau/gen-ai-itops:
+- Name: CI/CD Pipeline
+  ID: 12345
+  State: active
+  Path: .github/workflows/ci-cd.yml`
     }
   ],
   'default': [
     {
-      id: '1',
+      id: 'mock-1',
       role: 'assistant',
-      content: 'I\'ll help you manage that VM. Please wait while I process your request...'
+      content: 'I am forwarding the request to the IT Specialist for handling.'
     },
     {
-      id: '2',
-      role: 'assistant',
-      content: 'Operation completed successfully!'
+      id: 'mock-2',
+      role: 'specialist',
+      content: 'I understand you need help with IT operations. Could you please provide more details about what you would like to do?'
     }
   ]
 }

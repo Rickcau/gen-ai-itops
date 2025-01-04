@@ -94,33 +94,37 @@ export default function ChatInterface() {
 
         const data: ChatApiResponse = await response.json()
         console.log('API Response:', data)
-
-        let newMessages = [...chatState.messages]
         
         // Add Assistant response if present
         if (data.assistantResponse) {
-          newMessages.push({
+          const assistantMessage: Message = {
             id: nanoid(),
             role: 'assistant',
             content: data.assistantResponse
-          })
+          }
+          setChatState(prev => ({
+            ...prev,
+            messages: [...prev.messages, assistantMessage]
+          }))
         }
 
         // Add Specialist response if present
         if (data.specialistResponse) {
-          newMessages.push({
+          const specialistMessage: Message = {
             id: nanoid(),
             role: 'specialist',
             content: data.specialistResponse
-          })
+          }
+          setChatState(prev => ({
+            isLoading: false,
+            messages: [...prev.messages, specialistMessage]
+          }))
+        } else {
+          setChatState(prev => ({
+            isLoading: false,
+            messages: prev.messages
+          }))
         }
-
-        // Update state with all new messages at once
-        setChatState({
-          isLoading: false,
-          messages: newMessages
-        })
-
       } catch (error) {
         console.error('Error details:', error)
         setShowEndpointWarning(true)
@@ -193,33 +197,18 @@ export default function ChatInterface() {
 
         const data = await response.json()
         console.log('API Response:', data)
-
-        let newMessages = [...chatState.messages]
         
-        // Add Assistant response if present
-        if (data.assistantResponse) {
-          newMessages.push({
-            id: nanoid(),
-            role: 'assistant',
-            content: data.assistantResponse
-          })
+        // Convert the API response format to our Message format
+        const apiMessage: Message = {
+          id: nanoid(),
+          role: 'assistant',
+          content: data.chatResponse
         }
-
-        // Add Specialist response if present
-        if (data.specialistResponse) {
-          newMessages.push({
-            id: nanoid(),
-            role: 'specialist',
-            content: data.specialistResponse
-          })
-        }
-
-        // Update state with all new messages at once
-        setChatState({
+        
+        setChatState(prev => ({
           isLoading: false,
-          messages: newMessages
-        })
-
+          messages: [...prev.messages, apiMessage]
+        }))
       } catch (error) {
         console.error('Error details:', error)
         setShowEndpointWarning(true)
@@ -327,3 +316,4 @@ export default function ChatInterface() {
     </>
   )
 }
+

@@ -85,7 +85,7 @@ namespace api_gen_ai_itops.Controllers
 
                 var sessionId = chatRequest.SessionId;
                 var chatHistory = _chatHistoryManager.GetOrCreateChatHistory(sessionId);
-
+                chatHistory.AddUserMessage(chatRequest.Prompt); // add user message to chatHistory
                 // Create agent container with all necessary dependencies
                 var agentContainer = new AgentContainer(_chat, _kernel, _aiSearchPlugin, _runbookPlugin, _gitHubWorkflowPlugin);
 
@@ -93,7 +93,7 @@ namespace api_gen_ai_itops.Controllers
                 var response = await agentContainer.ProcessChatRequestAsync(chatRequest.Prompt, chatHistory);
 
                 // Update the session chat history with the new messages
-                chatHistory.AddUserMessage(chatRequest.Prompt);
+                
                 if (!string.IsNullOrWhiteSpace(response.AssistantResponse))
                 {
                     chatHistory.AddAssistantMessage(response.AssistantResponse);
@@ -102,6 +102,9 @@ namespace api_gen_ai_itops.Controllers
                 {
                     chatHistory.AddAssistantMessage(response.SpecialistResponse);
                 }
+
+                // RDC : Debugging List Workflow issue.  the ProcessChatRequestAsync is handling the request properly, it's something on the UI side that 
+                // is not handling this.
 
                 return new OkObjectResult(response);
             }

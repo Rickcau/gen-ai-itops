@@ -146,12 +146,17 @@ namespace Helper.AgentContainer
                     
                     When handling a NEW request related to IT Operations:
                     1. State "I am forwarding the request to the IT Specialist for handling."
-                    2. Include the request details
-                    3. End with "ROUTE_TO_SPECIALIST"
+                    2. For GitHub workflow requests:
+                       - Only write "Request details: Please list the available workflows."
+                       - Do not attempt to list workflows yourself
+                    3. For other requests:
+                       - Include the request details
+                    4. End with "ROUTE_TO_SPECIALIST"
                     
-                    When receiving control after a status check:
-                    1. Ask "Is there anything else I can help you with?"
-                    2. End with "DONE!"
+                    When handling a status check request:
+                    1. Look in chat history for the most recent Job ID
+                    2. Forward to Specialist with "Request details: Please check the status of the job with ID '[JobId]' again."
+                    3. End with "ROUTE_TO_SPECIALIST"
                     
                     For non-IT queries:
                     1. Explain that you only help with IT Operations
@@ -159,7 +164,10 @@ namespace Helper.AgentContainer
                     
                     Important:
                     - Never forward a request that has already been routed
-                    - After a status check, only ask if there's anything else
+                    - Never make assumptions about job status
+                    - Never attempt to list or manage GitHub workflows
+                    - Always let the Specialist handle all operations
+                    - Only acknowledge results after the Specialist has shown them
                     """,
                 Kernel = _kernel.Clone(),
                 Arguments = new KernelArguments(
@@ -189,6 +197,8 @@ namespace Helper.AgentContainer
                        - If not found, ask the user for the Job ID
                        - Call CheckJobStatus with only the GUID portion
                        - Present the status and output in a clear format
+                       - If job is still running, ask if they want to check again
+                       - If job is complete, ALWAYS show the full output including any results
                        - End with "OPERATION_COMPLETE"
                     2. For other Runbook requests:
                        - First, invoke the AISearchPlugin to find the operations available
@@ -220,6 +230,7 @@ namespace Helper.AgentContainer
                     - When checking job status, only pass the GUID portion of IDs
                     - You must ALWAYS end your response with "OPERATION_COMPLETE"
                     - Never end your response without "OPERATION_COMPLETE"
+                    - When a job completes, always show its output before ending
                     """,
                 Kernel = _kernel.Clone(),
                 Arguments = new KernelArguments(
@@ -305,13 +316,18 @@ namespace Helper.AgentContainer
         /// <returns>A ChatProviderResponse containing the assistant and specialist responses.</returns>
         public async Task<ChatProviderResponse> ProcessChatRequestAsync(string userInput, ChatHistory existingChatHistory)
         {
+            Console.WriteLine("\n=== Starting ProcessChatRequestAsync ===");
+            Console.WriteLine($"User Input: {userInput}");
+            
             var response = new ChatProviderResponse();
             var chatHistory = new ChatHistory();
 
             // Add the last 5 messages from existing history for context
             var recentHistory = existingChatHistory.TakeLast(5).ToList();
+            Console.WriteLine($"\nAdding {recentHistory.Count} recent messages to chat history");
             foreach (var historicalMessage in recentHistory)
             {
+                Console.WriteLine($"Historical Message - Role: {historicalMessage.Role}, Author: {historicalMessage.AuthorName}, Content: {historicalMessage.Content}");
                 chatHistory.Add(new ChatMessageContent(
                     historicalMessage.Role,
                     historicalMessage.Content,
@@ -326,12 +342,14 @@ namespace Helper.AgentContainer
             var specialistAgent = GetSpecialistAgent();
 
             // First, let the Assistant process the request
+            Console.WriteLine("\n=== Assistant Processing ===");
             var assistantResponses = new List<string>();
             bool isRouteToSpecialist = false;
 
             await foreach (ChatMessageContent assistantResponse in assistantAgent.InvokeAsync(chatHistory))
             {
                 var originalContent = assistantResponse.Content!.Trim();
+                Console.WriteLine($"Assistant Raw Response: {originalContent}");
                 isRouteToSpecialist = originalContent.EndsWith("ROUTE_TO_SPECIALIST");
 
                 var displayContent = originalContent
@@ -341,35 +359,43 @@ namespace Helper.AgentContainer
 
                 if (!string.IsNullOrWhiteSpace(displayContent))
                 {
+                    Console.WriteLine($"Assistant Processed Response: {displayContent}");
                     assistantResponses.Add(displayContent);
                     chatHistory.AddAssistantMessage(displayContent);
                 }
             }
 
             response.AssistantResponse = string.Join("\n", assistantResponses);
+            Console.WriteLine($"\nFinal Assistant Response: {response.AssistantResponse}");
+            Console.WriteLine($"Route to Specialist: {isRouteToSpecialist}");
 
             // If the Assistant routed to Specialist, process with Specialist
             if (isRouteToSpecialist)
             {
+                Console.WriteLine("\n=== Specialist Processing ===");
                 var specialistResponses = new List<string>();
                 await foreach (ChatMessageContent specialistResponse in specialistAgent.InvokeAsync(chatHistory))
                 {
                     var originalContent = specialistResponse.Content!.Trim();
+                    Console.WriteLine($"Specialist Raw Response: {originalContent}");
                     var displayContent = originalContent
                         .Replace("OPERATION_COMPLETE", "")
                         .Trim();
 
                     if (!string.IsNullOrWhiteSpace(displayContent))
                     {
+                        Console.WriteLine($"Specialist Processed Response: {displayContent}");
                         specialistResponses.Add(displayContent);
                         chatHistory.AddAssistantMessage(displayContent);
                     }
                 }
 
                 response.SpecialistResponse = string.Join("\n", specialistResponses);
+                Console.WriteLine($"\nFinal Specialist Response: {response.SpecialistResponse}");
             }
 
             response.ChatResponse = string.Join("\n", assistantResponses.Concat(new[] { response.SpecialistResponse }).Where(r => !string.IsNullOrWhiteSpace(r)));
+            Console.WriteLine("\n=== ProcessChatRequestAsync Complete ===\n");
             return response;
         }
     }

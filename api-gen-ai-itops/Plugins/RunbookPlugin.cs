@@ -61,9 +61,9 @@ namespace Plugins
                 //var jobId = "983f5108-e275-4946-8092-1184f7091633";
                 //var resultrunbookName = "List VMs";
 
-                var resultMessage = $"The runbook \"{resultrunbookName}\" has been successfully executed. You can track its progress with Job ID: `{jobId}`.";
+                var resultMessage = $"The runbook \"{resultrunbookName}\" has been started. You can track its progress with Job ID: `{jobId}`.";
                 content.AppendLine(resultMessage);
-                content.AppendLine("\nIf you would like to check the status of this job, please let me know.");
+                content.AppendLine("\nWould you like to check the status of this job?");
                 _logger.LogDebug("Runbook execution started: {ResultMessage}", resultMessage);
             }
             catch (Azure.RequestFailedException ex)

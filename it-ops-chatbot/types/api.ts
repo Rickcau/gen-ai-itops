@@ -1,5 +1,11 @@
 export interface ChatApiRequest {
-  sessionId: string;
-  userId: string;
+  sessionId: string | null;
+  userId: string | null;
   prompt: string;
+}
+
+export interface ChatApiResponse {
+  chatResponse: string;
+  assistantResponse?: string;
+  specialistResponse?: string;
 } 

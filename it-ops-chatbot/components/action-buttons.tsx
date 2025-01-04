@@ -8,6 +8,8 @@ import {
   StopCircle,
   ListChecks,
   RefreshCw,
+  GitBranch,
+  List,
 } from "lucide-react"
 import {
   Tooltip,
@@ -137,6 +139,26 @@ export function ActionButtons({ onAction }: ActionButtonsProps) {
         }
       ],
       promptTemplate: 'Can you restart VM {vmName} in resource group {resourceGroup}?'
+    },
+    { 
+      id: 'list-workflows',
+      label: "List Workflows", 
+      value: "list-workflows", 
+      className: "bg-gray-500 hover:bg-gray-600 dark:bg-gray-600 dark:hover:bg-gray-700 text-white",
+      requiresParameters: false,
+      icon: List,
+      tooltip: "Show available GitHub workflows",
+      promptTemplate: 'list workflows'
+    },
+    { 
+      id: 'run-cicd',
+      label: "Run CI/CD Pipeline", 
+      value: "run-cicd", 
+      className: "bg-purple-500 hover:bg-purple-600 dark:bg-purple-600 dark:hover:bg-purple-700 text-white",
+      requiresParameters: false,
+      icon: GitBranch,
+      tooltip: "Trigger the CI/CD pipeline workflow",
+      promptTemplate: 'trigger workflow CI/CD Pipeline'
     }
   ]
 
