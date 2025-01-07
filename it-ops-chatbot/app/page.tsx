@@ -95,11 +95,11 @@ export default function ChatInterface() {
         const data: ChatApiResponse = await response.json()
         console.log('API Response:', data)
 
-        // Update state with all new messages at once
-        setChatState({
+        // Update state with all new messages at once while preserving the entire chat history
+        setChatState((prev: ChatState) => ({
           isLoading: false,
           messages: [
-            ...chatState.messages,
+            ...prev.messages,  // Keep all previous messages (including user's message)
             ...(data.assistantResponse ? [{
               id: nanoid(),
               role: 'assistant' as const,
@@ -111,7 +111,7 @@ export default function ChatInterface() {
               content: data.specialistResponse
             }] : [])
           ]
-        })
+        }))
 
       } catch (error) {
         console.error('Error details:', error)
@@ -186,11 +186,11 @@ export default function ChatInterface() {
         const data = await response.json()
         console.log('API Response:', data)
 
-        // Update state with all new messages at once
-        setChatState({
+        // Update state with all new messages at once while preserving the entire chat history
+        setChatState((prev: ChatState) => ({
           isLoading: false,
           messages: [
-            ...chatState.messages,
+            ...prev.messages,  // Keep all previous messages (including user's message)
             ...(data.assistantResponse ? [{
               id: nanoid(),
               role: 'assistant' as const,
@@ -202,7 +202,7 @@ export default function ChatInterface() {
               content: data.specialistResponse
             }] : [])
           ]
-        })
+        }))
 
       } catch (error) {
         console.error('Error details:', error)
