@@ -75,7 +75,7 @@ if (checkAppInsights)
 // If you want to see all the calls that are happening with LLM, this is the best way to get that type of telemetry.
 // Likely you could leverage something like AppContext to enable this or just use an environment setting
 // 
-AppContext.SetSwitch("Microsoft.SemanticKernel.Experimental.GenAI.EnableOTelDiagnosticsSensitive", true);
+    AppContext.SetSwitch("Microsoft.SemanticKernel.Experimental.GenAI.EnableOTelDiagnosticsSensitive", true);
     string AppInsightsConnectionString = configuration.AzureAppInsights ?? "";  // Uncomment this if you plan top use OpenTelemetry
     // Using resource builder to add service name to all telemetry items
     var resourceBuilder = ResourceBuilder

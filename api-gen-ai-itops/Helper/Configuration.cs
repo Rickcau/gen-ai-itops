@@ -107,6 +107,19 @@ namespace Helper.AzureOpenAISearchConfiguration
         public string? AzureOpenAIEmbeddingDimensions { get; set; }
 
         /// <summary>
+        /// Open Weather API end point
+        /// e.g. e.g. https://api.openweathermap.org/data/2.5/weather?zip=
+        /// </summary>
+        [ConfigurationKeyName("WEATHER_ENDPOINT")]
+        public string? WeatherEndpoint { get; set; }
+
+        /// <summary>
+        /// Open Weather API Key
+        /// </summary>
+        [ConfigurationKeyName("WEATHER_API_KEY")]
+        public string? WeatherApiKey { get; set; }
+
+        /// <summary>
         /// Service endpoint for the search service
         /// e.g. "https://your-search-service.search.windows.net
         /// </summary>
