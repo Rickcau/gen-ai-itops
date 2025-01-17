@@ -11,6 +11,7 @@ using Microsoft.Extensions.Http;
 using Azure.Identity;
 using Azure.Core;
 using Plugins;
+using Microsoft.Extensions.DependencyInjection;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -63,6 +64,11 @@ builder.Services.AddSingleton<GitHubWorkflowPlugin>(sp =>
     new GitHubWorkflowPlugin(
         sp.GetRequiredService<Configuration>(),
         sp.GetRequiredService<ILogger<GitHubWorkflowPlugin>>()
+    ));
+builder.Services.AddSingleton<WeatherPlugin>(sp =>
+    new WeatherPlugin(
+        sp.GetRequiredService<Configuration>(),
+        sp.GetRequiredService<ILogger<WeatherPlugin>>()
     ));
 
 // Add services to the container.
