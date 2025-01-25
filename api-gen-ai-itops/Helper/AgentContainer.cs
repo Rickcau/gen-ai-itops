@@ -404,88 +404,96 @@ namespace Helper.AgentContainer
             bool isRouteToSpecialist = false;
             bool isRouteToWeatherAgent = false;
 
-            await foreach (ChatMessageContent assistantResponse in assistantAgent.InvokeAsync(chatHistory))
+            try
             {
-                var originalContent = assistantResponse.Content!.Trim();
-                Console.WriteLine($"Assistant Raw Response: {originalContent}");
-                isRouteToSpecialist = originalContent.EndsWith("ROUTE_TO_SPECIALIST");
-                isRouteToWeatherAgent = originalContent.EndsWith("ROUTE_TO_WEATHER");
 
-                var displayContent = originalContent
-                    .Replace("ROUTE_TO_SPECIALIST", "")
-                    .Replace("ROUTE_TO_WEATHER", "")
-                    .Replace("DONE!", "")
-                    .Trim();
-
-                if (!string.IsNullOrWhiteSpace(displayContent))
+                await foreach (ChatMessageContent assistantResponse in assistantAgent.InvokeAsync(chatHistory))
                 {
-                    Console.WriteLine($"Assistant Processed Response: {displayContent}");
-                    assistantResponses.Add(displayContent);
-                    chatHistory.AddAssistantMessage(displayContent);
-                }
-            }
+                    var originalContent = assistantResponse.Content!.Trim();
+                    Console.WriteLine($"Assistant Raw Response: {originalContent}");
+                    isRouteToSpecialist = originalContent.EndsWith("ROUTE_TO_SPECIALIST");
+                    isRouteToWeatherAgent = originalContent.EndsWith("ROUTE_TO_WEATHER");
 
-            response.AssistantResponse = string.Join("\n", assistantResponses);
-            Console.WriteLine($"\nFinal Assistant Response: {response.AssistantResponse}");
-            Console.WriteLine($"Route to Specialist: {isRouteToSpecialist}");
-
-            // If the Assistant routed to Specialist, process with Specialist
-            if (isRouteToSpecialist)
-            {
-                Console.WriteLine("\n=== Specialist Processing ===");
-                var specialistResponses = new List<string>();
-                await foreach (ChatMessageContent specialistResponse in specialistAgent.InvokeAsync(chatHistory))
-                {
-                    var originalContent = specialistResponse.Content!.Trim();
-                    Console.WriteLine($"Specialist Raw Response: {originalContent}");
                     var displayContent = originalContent
-                        .Replace("OPERATION_COMPLETE", "")
+                        .Replace("ROUTE_TO_SPECIALIST", "")
+                        .Replace("ROUTE_TO_WEATHER", "")
+                        .Replace("DONE!", "")
                         .Trim();
 
                     if (!string.IsNullOrWhiteSpace(displayContent))
                     {
-                        Console.WriteLine($"Specialist Processed Response: {displayContent}");
-                        specialistResponses.Add(displayContent);
+                        Console.WriteLine($"Assistant Processed Response: {displayContent}");
+                        assistantResponses.Add(displayContent);
                         chatHistory.AddAssistantMessage(displayContent);
                     }
                 }
 
-                response.SpecialistResponse = string.Join("\n", specialistResponses);
-                Console.WriteLine($"\nFinal Specialist Response: {response.SpecialistResponse}");
-            }
+                response.AssistantResponse = string.Join("\n", assistantResponses);
+                Console.WriteLine($"\nFinal Assistant Response: {response.AssistantResponse}");
+                Console.WriteLine($"Route to Specialist: {isRouteToSpecialist}");
 
-            // If the Assistant routed to Weather Agent, process with Weather Agent
-            if (isRouteToWeatherAgent)
-            {
-                Console.WriteLine("\n=== Weather Agent Processing ===");
-                var specialistResponses = new List<string>();
-                await foreach (ChatMessageContent specialistResponse in weatherAgent.InvokeAsync(chatHistory))
+                // If the Assistant routed to Specialist, process with Specialist
+                if (isRouteToSpecialist)
                 {
-                    var originalContent = specialistResponse.Content!.Trim();
-                    Console.WriteLine($"Weather Agent Raw Response: {originalContent}");
-                    var displayContent = originalContent
-                        .Replace("OPERATION_COMPLETE", "")
-                        .Trim();
-
-                    if (!string.IsNullOrWhiteSpace(displayContent))
+                    Console.WriteLine("\n=== Specialist Processing ===");
+                    var specialistResponses = new List<string>();
+                    await foreach (ChatMessageContent specialistResponse in specialistAgent.InvokeAsync(chatHistory))
                     {
-                        Console.WriteLine($"Weather Agent Processed Response: {displayContent}");
-                        specialistResponses.Add(displayContent);
-                        chatHistory.AddAssistantMessage(displayContent);
+                        var originalContent = specialistResponse.Content!.Trim();
+                        Console.WriteLine($"Specialist Raw Response: {originalContent}");
+                        var displayContent = originalContent
+                            .Replace("OPERATION_COMPLETE", "")
+                            .Trim();
+
+                        if (!string.IsNullOrWhiteSpace(displayContent))
+                        {
+                            Console.WriteLine($"Specialist Processed Response: {displayContent}");
+                            specialistResponses.Add(displayContent);
+                            chatHistory.AddAssistantMessage(displayContent);
+                        }
                     }
+
+                    response.SpecialistResponse = string.Join("\n", specialistResponses);
+                    Console.WriteLine($"\nFinal Specialist Response: {response.SpecialistResponse}");
                 }
 
-                response.WeatherResponse = string.Join("\n", specialistResponses);
-                Console.WriteLine($"\nFinal Weather Agent Response: {response.SpecialistResponse}");
-            }
+                // If the Assistant routed to Weather Agent, process with Weather Agent
+                if (isRouteToWeatherAgent)
+                {
+                    Console.WriteLine("\n=== Weather Agent Processing ===");
+                    var specialistResponses = new List<string>();
+                    await foreach (ChatMessageContent specialistResponse in weatherAgent.InvokeAsync(chatHistory))
+                    {
+                        var originalContent = specialistResponse.Content!.Trim();
+                        Console.WriteLine($"Weather Agent Raw Response: {originalContent}");
+                        var displayContent = originalContent
+                            .Replace("OPERATION_COMPLETE", "")
+                            .Trim();
 
-            // response.ChatResponse = string.Join("\n", assistantResponses.Concat(new[] { response.SpecialistResponse }).Where(r => !string.IsNullOrWhiteSpace(r)));
-            response.ChatResponse = string.Join("\n",
-                assistantResponses
-                    .Concat(new[] { response.SpecialistResponse })
-                    .Concat(new[] { response.WeatherResponse })
-                    .Where(r => !string.IsNullOrWhiteSpace(r)));
-            Console.WriteLine("\n=== ProcessChatRequestAsync Complete ===\n");
+                        if (!string.IsNullOrWhiteSpace(displayContent))
+                        {
+                            Console.WriteLine($"Weather Agent Processed Response: {displayContent}");
+                            specialistResponses.Add(displayContent);
+                            chatHistory.AddAssistantMessage(displayContent);
+                        }
+                    }
+
+                    response.WeatherResponse = string.Join("\n", specialistResponses);
+                    Console.WriteLine($"\nFinal Weather Agent Response: {response.SpecialistResponse}");
+                }
+
+                // response.ChatResponse = string.Join("\n", assistantResponses.Concat(new[] { response.SpecialistResponse }).Where(r => !string.IsNullOrWhiteSpace(r)));
+                response.ChatResponse = string.Join("\n",
+                    assistantResponses
+                        .Concat(new[] { response.SpecialistResponse })
+                        .Concat(new[] { response.WeatherResponse })
+                        .Where(r => !string.IsNullOrWhiteSpace(r)));
+                Console.WriteLine("\n=== ProcessChatRequestAsync Complete ===\n");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.ToString());
+            }
             return response;
         }
     }

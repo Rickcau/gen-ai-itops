@@ -5,6 +5,7 @@
 local.settings.json
 local.settings.master
 appsettings.Local.json
+appsettings.Local*.json
 App.config
 
 # Next.js build output
