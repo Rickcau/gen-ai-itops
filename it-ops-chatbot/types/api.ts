@@ -8,4 +8,5 @@ export interface ChatApiResponse {
   chatResponse: string;
   assistantResponse?: string;
   specialistResponse?: string;
+  weatherResponse?: string;
 } 

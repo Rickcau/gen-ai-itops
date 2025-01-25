@@ -66,16 +66,12 @@ export default function ChatInterface() {
           prompt: input
         }
 
-        const apiUrl = `${config.apiBaseUrl}/${config.endpoints.chat}`
-        console.log('Calling API:', apiUrl)
-        console.log('With payload:', payload)
-
-        const response = await fetch(apiUrl, {
+        // Call our Next.js API route instead of the backend directly
+        const response = await fetch('/api/chat', {
           method: 'POST',
           headers: { 
             'Content-Type': 'application/json',
-            'Accept': 'application/json',
-            'api-key': config.apiKey
+            'Accept': 'application/json'
           },
           body: JSON.stringify(payload)
         })
@@ -95,15 +91,19 @@ export default function ChatInterface() {
         const data: ChatApiResponse = await response.json()
         console.log('API Response:', data)
 
-        // Update state with all new messages at once while preserving the entire chat history
         setChatState((prev: ChatState) => ({
           isLoading: false,
           messages: [
-            ...prev.messages,  // Keep all previous messages (including user's message)
+            ...prev.messages,
             ...(data.assistantResponse ? [{
               id: nanoid(),
               role: 'assistant' as const,
               content: data.assistantResponse
+            }] : []),
+            ...(data.weatherResponse ? [{
+              id: nanoid(),
+              role: 'weather' as const,
+              content: data.weatherResponse
             }] : []),
             ...(data.specialistResponse ? [{
               id: nanoid(),
@@ -157,16 +157,12 @@ export default function ChatInterface() {
           prompt
         }
 
-        const apiUrl = `${config.apiBaseUrl}/${config.endpoints.chat}`
-        console.log('Calling API:', apiUrl)
-        console.log('With payload:', payload)
-
-        const response = await fetch(apiUrl, {
+        // Call our Next.js API route instead of the backend directly
+        const response = await fetch('/api/chat', {
           method: 'POST',
           headers: { 
             'Content-Type': 'application/json',
-            'Accept': 'application/json',
-            'api-key': config.apiKey
+            'Accept': 'application/json'
           },
           body: JSON.stringify(payload)
         })
@@ -186,15 +182,19 @@ export default function ChatInterface() {
         const data = await response.json()
         console.log('API Response:', data)
 
-        // Update state with all new messages at once while preserving the entire chat history
         setChatState((prev: ChatState) => ({
           isLoading: false,
           messages: [
-            ...prev.messages,  // Keep all previous messages (including user's message)
+            ...prev.messages,
             ...(data.assistantResponse ? [{
               id: nanoid(),
               role: 'assistant' as const,
               content: data.assistantResponse
+            }] : []),
+            ...(data.weatherResponse ? [{
+              id: nanoid(),
+              role: 'weather' as const,
+              content: data.weatherResponse
             }] : []),
             ...(data.specialistResponse ? [{
               id: nanoid(),
@@ -229,7 +229,7 @@ export default function ChatInterface() {
           <Card className="flex-1 flex flex-col overflow-hidden">
             <CardHeader className="flex flex-col space-y-3 pb-4">
               <div className="flex justify-between items-center">
-                <h1 className="text-2xl font-bold tracking-tight">IT Operations Assistant</h1>
+                <h1 className="text-2xl font-bold tracking-tight">Multi-Agent IT Operations Platform</h1>
                 <div className="flex items-center gap-3">
                   <ThemeToggle />
                   <div className="h-4 w-px bg-border" />
