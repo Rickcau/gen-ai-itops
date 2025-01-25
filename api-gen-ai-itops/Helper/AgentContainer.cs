@@ -31,6 +31,7 @@ namespace Helper.AgentContainer
         private readonly Kernel _kernel;
         private readonly AISearchPlugin _aiSearchPlugin;
         private readonly RunbookPlugin _runbookPlugin;
+        private readonly WeatherPlugin _weatherPlugin;
         private readonly GitHubWorkflowPlugin _gitHubWorkflowPlugin;
         private const string AssistantAgentName = "Assistant";
         private const string SpecialistAgentName = "Specialist";
@@ -44,22 +45,27 @@ namespace Helper.AgentContainer
         /// <param name="aiSearchPlugin">The AI search plugin for the specialist agent.</param>
         /// <param name="runbookPlugin">The runbook plugin for the specialist agent.</param>
         /// <param name="gitHubWorkflowPlugin">The GitHub workflow plugin for the specialist agent.</param>
+        /// <param name="weatherPlugin">The GitHub workflow plugin for the specialist agent.</param>    
         public AgentContainer(
             IChatCompletionService chatCompletionService, 
             Kernel kernel,
             AISearchPlugin aiSearchPlugin,
             RunbookPlugin runbookPlugin,
-            GitHubWorkflowPlugin gitHubWorkflowPlugin)
+            GitHubWorkflowPlugin gitHubWorkflowPlugin,
+            WeatherPlugin weatherPlugin)
         {
             _chatCompletionService = chatCompletionService;
             _kernel = kernel;
             _aiSearchPlugin = aiSearchPlugin;
             _runbookPlugin = runbookPlugin;
             _gitHubWorkflowPlugin = gitHubWorkflowPlugin;
+            _weatherPlugin = weatherPlugin;
+
         }
 
         /// <summary>
         /// Creates and configures a group chat with Assistant and Specialist agents.
+        /// This is not being used...
         /// </summary>
         /// <returns>A configured AgentGroupChat ready for user interaction.</returns>
         public AgentGroupChat CreateAgentGroupChat()
@@ -152,14 +158,18 @@ namespace Helper.AgentContainer
                     3. For other requests:
                        - Include the request details
                     4. End with "ROUTE_TO_SPECIALIST"
+
+                    When handling a NEW request related to Weather:
+                    1. State "I am forwarding the request to the Weather Agent for handling."
+                    2. End with "ROUTE_TO_WEATHER"
                     
                     When handling a status check request:
                     1. Look in chat history for the most recent Job ID
                     2. Forward to Specialist with "Request details: Please check the status of the job with ID '[JobId]' again."
                     3. End with "ROUTE_TO_SPECIALIST"
                     
-                    For non-IT queries:
-                    1. Explain that you only help with IT Operations
+                    For non-IT or weather queries:
+                    1. Explain that you only help with IT Operations or Weather questions
                     2. End with "DONE!"
                     
                     Important:
@@ -250,6 +260,43 @@ namespace Helper.AgentContainer
             return agent;
         }
 
+        private ChatCompletionAgent CreateWeatherAgent()
+        {
+            var agent = new ChatCompletionAgent
+            {
+                Name = SpecialistAgentName,
+                Instructions = """
+                    You are a Weather Agent specialized providing the weather for a zip code. Your tasks include:
+                    1. Weather requests by calling the WeatherPlugin (if not available, don't try to call it)
+                    2. If you are unable to use your knowledge to determine the zip code, ask for it.
+                    3. Once the weather details are retreived provide the results
+
+                    For Weather operations:
+                    1. First, invoke the WeatherPlugin passing the zipcode to the GetWeatherAsync function.
+                       - Return the results
+                       - End with "OPERATION_COMPLETE"
+                   
+                    Important: 
+                    - Always scan the chat history for context only for zipcode or location
+                    - You must ALWAYS end your response with "OPERATION_COMPLETE"
+                    - Never end your response without "OPERATION_COMPLETE"
+                    """,
+                Kernel = _kernel.Clone(),
+                Arguments = new KernelArguments(
+                    new OpenAIPromptExecutionSettings
+                    {
+                        ServiceId = "azure-openai",
+                        ToolCallBehavior = ToolCallBehavior.AutoInvokeKernelFunctions
+                    }
+                )
+            };
+
+            // Add plugins to the specialist agent
+            agent.Kernel.Plugins.Add(KernelPluginFactory.CreateFromObject(_weatherPlugin));
+
+            return agent;
+        }
+
         /// <summary>
         /// Executes a user request in the group chat and returns the formatted responses.
         /// </summary>
@@ -309,6 +356,15 @@ namespace Helper.AgentContainer
         }
 
         /// <summary>
+        /// Gets the Specialist agent for handling IT operations.
+        /// </summary>
+        /// <returns>A configured ChatCompletionAgent for the Specialist role.</returns>
+        public ChatCompletionAgent GetWeatherAgent()
+        {
+            return CreateWeatherAgent();
+        }
+
+        /// <summary>
         /// Processes a chat request through the agent system, handling the interaction between Assistant and Specialist agents.
         /// </summary>
         /// <param name="userInput">The user's current input message.</param>
@@ -340,20 +396,24 @@ namespace Helper.AgentContainer
 
             var assistantAgent = GetAssistantAgent();
             var specialistAgent = GetSpecialistAgent();
+            var weatherAgent = GetWeatherAgent();
 
             // First, let the Assistant process the request
             Console.WriteLine("\n=== Assistant Processing ===");
             var assistantResponses = new List<string>();
             bool isRouteToSpecialist = false;
+            bool isRouteToWeatherAgent = false;
 
             await foreach (ChatMessageContent assistantResponse in assistantAgent.InvokeAsync(chatHistory))
             {
                 var originalContent = assistantResponse.Content!.Trim();
                 Console.WriteLine($"Assistant Raw Response: {originalContent}");
                 isRouteToSpecialist = originalContent.EndsWith("ROUTE_TO_SPECIALIST");
+                isRouteToWeatherAgent = originalContent.EndsWith("ROUTE_TO_WEATHER");
 
                 var displayContent = originalContent
                     .Replace("ROUTE_TO_SPECIALIST", "")
+                    .Replace("ROUTE_TO_WEATHER", "")
                     .Replace("DONE!", "")
                     .Trim();
 
@@ -394,7 +454,37 @@ namespace Helper.AgentContainer
                 Console.WriteLine($"\nFinal Specialist Response: {response.SpecialistResponse}");
             }
 
-            response.ChatResponse = string.Join("\n", assistantResponses.Concat(new[] { response.SpecialistResponse }).Where(r => !string.IsNullOrWhiteSpace(r)));
+            // If the Assistant routed to Weather Agent, process with Weather Agent
+            if (isRouteToWeatherAgent)
+            {
+                Console.WriteLine("\n=== Weather Agent Processing ===");
+                var specialistResponses = new List<string>();
+                await foreach (ChatMessageContent specialistResponse in weatherAgent.InvokeAsync(chatHistory))
+                {
+                    var originalContent = specialistResponse.Content!.Trim();
+                    Console.WriteLine($"Weather Agent Raw Response: {originalContent}");
+                    var displayContent = originalContent
+                        .Replace("OPERATION_COMPLETE", "")
+                        .Trim();
+
+                    if (!string.IsNullOrWhiteSpace(displayContent))
+                    {
+                        Console.WriteLine($"Weather Agent Processed Response: {displayContent}");
+                        specialistResponses.Add(displayContent);
+                        chatHistory.AddAssistantMessage(displayContent);
+                    }
+                }
+
+                response.WeatherResponse = string.Join("\n", specialistResponses);
+                Console.WriteLine($"\nFinal Weather Agent Response: {response.SpecialistResponse}");
+            }
+
+            // response.ChatResponse = string.Join("\n", assistantResponses.Concat(new[] { response.SpecialistResponse }).Where(r => !string.IsNullOrWhiteSpace(r)));
+            response.ChatResponse = string.Join("\n",
+                assistantResponses
+                    .Concat(new[] { response.SpecialistResponse })
+                    .Concat(new[] { response.WeatherResponse })
+                    .Where(r => !string.IsNullOrWhiteSpace(r)));
             Console.WriteLine("\n=== ProcessChatRequestAsync Complete ===\n");
             return response;
         }

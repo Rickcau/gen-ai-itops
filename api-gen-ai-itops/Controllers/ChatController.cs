@@ -39,6 +39,7 @@ namespace api_gen_ai_itops.Controllers
         private readonly AISearchPlugin _aiSearchPlugin;
         private readonly RunbookPlugin _runbookPlugin;
         private readonly GitHubWorkflowPlugin _gitHubWorkflowPlugin;
+        private readonly WeatherPlugin _weatherPlugin;
 
         public ChatController(
             ILogger<ChatController> logger,
@@ -49,7 +50,8 @@ namespace api_gen_ai_itops.Controllers
             IChatHistoryManager chatHistoryManager,
             AISearchPlugin aiSearchPlugin,
             RunbookPlugin runbookPlugin,
-            GitHubWorkflowPlugin gitHubWorkflowPlugin)
+            GitHubWorkflowPlugin gitHubWorkflowPlugin,
+            WeatherPlugin weatherPlugin)
         {
             _logger = logger;
             _loggerFactory = loggerFactory;
@@ -60,6 +62,8 @@ namespace api_gen_ai_itops.Controllers
             _aiSearchPlugin = aiSearchPlugin;
             _runbookPlugin = runbookPlugin;
             _gitHubWorkflowPlugin = gitHubWorkflowPlugin;
+            _weatherPlugin = weatherPlugin;
+
         }
 
         [HttpPost]
@@ -87,7 +91,7 @@ namespace api_gen_ai_itops.Controllers
                 var chatHistory = _chatHistoryManager.GetOrCreateChatHistory(sessionId);
                 chatHistory.AddUserMessage(chatRequest.Prompt); // add user message to chatHistory
                 // Create agent container with all necessary dependencies
-                var agentContainer = new AgentContainer(_chat, _kernel, _aiSearchPlugin, _runbookPlugin, _gitHubWorkflowPlugin);
+                var agentContainer = new AgentContainer(_chat, _kernel, _aiSearchPlugin, _runbookPlugin, _gitHubWorkflowPlugin, _weatherPlugin);
 
                 // Process the chat request with existing history
                 var response = await agentContainer.ProcessChatRequestAsync(chatRequest.Prompt, chatHistory);

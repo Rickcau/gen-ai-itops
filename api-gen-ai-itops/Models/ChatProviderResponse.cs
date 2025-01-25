@@ -5,5 +5,6 @@
         public string? ChatResponse { get; set; }
         public string? AssistantResponse { get; set; }
         public string? SpecialistResponse { get; set; }
+        public string? WeatherResponse { get; set; }
     }
 }

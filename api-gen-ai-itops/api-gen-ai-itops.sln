@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.5.002.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "api-gen-ai-itops", "api-gen-ai-itops.csproj", "{8FB055E5-7899-41FA-8557-0461B999CF01}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{8FB055E5-7899-41FA-8557-0461B999CF01}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8FB055E5-7899-41FA-8557-0461B999CF01}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8FB055E5-7899-41FA-8557-0461B999CF01}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8FB055E5-7899-41FA-8557-0461B999CF01}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {2D33F2A3-E4E4-4A0B-89A3-EC8F48581BAC}
+	EndGlobalSection
+EndGlobal
