@@ -8,9 +8,9 @@ export function ThemeToggle() {
   const { theme, setTheme } = useTheme()
 
   return (
-    <Button
-      variant="ghost"
-      size="icon"
+    <Button 
+      variant="ghost" 
+      size="icon" 
       className="h-9 w-9"
       onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
     >
