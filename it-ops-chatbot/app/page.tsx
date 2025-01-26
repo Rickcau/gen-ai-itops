@@ -16,6 +16,7 @@ import type { Message, ChatState } from '@/types/chat'
 import type { ChatApiRequest, ChatApiResponse } from '@/types/api'
 import { mockChatResponses, mockActionResponses } from '@/lib/mockData'
 import { config } from '@/lib/config'
+import { ChatSidebar } from '@/components/chat-sidebar'
 
 export default function ChatInterface() {
   const [chatState, setChatState] = useState<ChatState>({
@@ -222,9 +223,23 @@ export default function ChatInterface() {
     setSessionId(nanoid())
   }
 
+  const handleNewChat = () => {
+    handleClear()
+    return nanoid() // Return a new ID for the chat
+  }
+
+  const handleSelectChat = (id: string) => {
+    // Stub: Would normally load chat history
+    console.log('Selected chat:', id)
+  }
+
   return (
     <>
       <div className="flex h-screen w-full overflow-hidden">
+        <ChatSidebar 
+          onNewChat={handleNewChat}
+          onSelectChat={handleSelectChat}
+        />
         <div className="container mx-auto max-w-4xl p-4 flex flex-col h-full">
           <Card className="flex-1 flex flex-col overflow-hidden">
             <CardHeader className="flex flex-col space-y-3 pb-4">
