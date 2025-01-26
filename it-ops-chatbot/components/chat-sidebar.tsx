@@ -4,7 +4,7 @@ import { useState, forwardRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Settings, MessageSquarePlus, Search, Pencil, Trash2, Check } from 'lucide-react'
+import { Settings, MessageSquarePlus, Search, Pencil, Trash2, Check, Shield } from 'lucide-react'
 import { format } from 'date-fns'
 
 interface ChatSidebarProps {
@@ -208,16 +208,24 @@ export const ChatSidebar = forwardRef<
             </div>
           </ScrollArea>
 
-          {/* Settings */}
-          <div className="p-4">
+          {/* Settings and Administration */}
+          <div className="p-4 space-y-2">
             <div className="h-px bg-border mb-4" />
             <Button
               variant="ghost"
-              className="w-full justify-start"
+              className="w-full justify-start text-sm font-normal"
               onClick={() => {}}
             >
               <Settings className="mr-2 h-4 w-4" />
               Settings
+            </Button>
+            <Button
+              variant="ghost"
+              className="w-full justify-start text-sm font-normal"
+              onClick={() => {}}
+            >
+              <Shield className="mr-2 h-4 w-4" />
+              Administration
             </Button>
           </div>
         </div>

@@ -1,0 +1,11 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "../stack-guru-app/frontend"
+		}
+	],
+	"settings": {}
+}
