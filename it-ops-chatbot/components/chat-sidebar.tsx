@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, forwardRef } from 'react'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -23,6 +24,7 @@ export const ChatSidebar = forwardRef<
   { updateChatTitle: (id: string, title: string) => void },
   ChatSidebarProps
 >(({ onNewChat, onSelectChat }, ref) => {
+  const router = useRouter()
   const [isOpen, setIsOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [chatHistory, setChatHistory] = useState<ChatItem[]>([])
@@ -222,7 +224,7 @@ export const ChatSidebar = forwardRef<
             <Button
               variant="ghost"
               className="w-full justify-start text-sm font-normal"
-              onClick={() => {}}
+              onClick={() => router.push('/admin')}
             >
               <Shield className="mr-2 h-4 w-4" />
               Administration
