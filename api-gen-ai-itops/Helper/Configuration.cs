@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using api_gen_ai_itops.Models;
+using Microsoft.Extensions.Configuration;
 
 namespace Helper.AzureOpenAISearchConfiguration
 {
@@ -7,6 +8,9 @@ namespace Helper.AzureOpenAISearchConfiguration
     /// </summary>
     public class Configuration
     {
+        
+        public CosmosDbOptions CosmosDb { get; set; } = new ();
+
         // "AZURE_MANAGED_IDENTITY"
         [ConfigurationKeyName("AZURE_MANAGED_IDENTITY")]
         public string? AzureManagedIdentity { get; set; }
