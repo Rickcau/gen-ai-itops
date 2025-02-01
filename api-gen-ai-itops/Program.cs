@@ -14,6 +14,7 @@ using Plugins;
 using Microsoft.Extensions.DependencyInjection;
 using api_gen_ai_itops.Models;
 using System.Text.Json;
+using Microsoft.AspNetCore.Cors;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -166,6 +167,14 @@ builder.Services.AddTransient<Kernel>(s =>
 builder.Services.AddSingleton<IChatCompletionService>(sp =>
                      sp.GetRequiredService<Kernel>().GetRequiredService<IChatCompletionService>());
 
+builder.Services.AddScoped<ChatHistory>(s =>
+{
+    var chathistory = new ChatHistory();
+    return chathistory;
+});
+
+// We can remove the ChatHistory Manager once we have the Cosmos persisting the chathistory.
+
 builder.Services.AddSingleton<api_gen_ai_itops.Services.IChatHistoryManager, ChatHistoryManager>();
 
 builder.Services.AddHostedService<ChatHistoryCleanupService>();
@@ -201,6 +210,7 @@ builder.Services.AddSwaggerGen(c =>
                 new string[] {}
             }
         });
+    c.EnableAnnotations();
 });
 
 var app = builder.Build();
