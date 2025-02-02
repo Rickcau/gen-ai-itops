@@ -164,8 +164,8 @@ namespace Helper.AgentContainer
                     2. End with "ROUTE_TO_WEATHER"
                     
                     When handling a status check request:
-                    1. Look in chat history for the most recent Job ID
-                    2. Forward to Specialist with "Request details: Please check the status of the job with ID '[JobId]' again."
+                    1. Look in chat history for the most recent Job ID:
+                    2. Forward to Specialist with "Request details: Please check the status of the job with ID <include the JobID from the history here> again."
                     3. End with "ROUTE_TO_SPECIALIST"
                     
                     For non-IT or weather queries:

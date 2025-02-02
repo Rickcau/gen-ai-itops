@@ -1,44 +1,41 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { nanoid } from 'nanoid'
-import { Eraser, Send, User } from 'lucide-react'
+import { Eraser, Send } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { MessageBubble } from '@/components/message-bubble'
 import { ActionButtons } from '@/components/action-buttons'
-import { ThemeToggle } from '@/components/theme-switcher'
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import { EndpointWarningDialog } from '@/components/endpoint-warning-dialog'
-import type { Message, ChatState } from '@/types/chat'
+import { UserHeader } from '@/components/user-header'
+import type { Message, ChatState, MessageRole } from '@/types/chat'
 import type { ChatApiRequest, ChatApiResponse } from '@/types/api'
-import { mockChatResponses, mockActionResponses } from '@/lib/mockData'
-import { config } from '@/lib/config'
+import { mockActionResponses } from '@/lib/mockData'
+import { ChatSidebar } from '@/components/chat-sidebar'
+import { useAuth } from '@/components/providers/auth-provider'
 
 export default function ChatInterface() {
+  const { authState } = useAuth();
   const [chatState, setChatState] = useState<ChatState>({
     messages: [],
     isLoading: false
   })
   const [input, setInput] = useState('')
-  const [mockMode, setMockMode] = useState(!config.apiConfigured)
-  const [sessionId, setSessionId] = useState('')
+  const [mockMode, setMockMode] = useState(false)
+  const [sessionId, setSessionId] = useState(nanoid())
   const [showEndpointWarning, setShowEndpointWarning] = useState(false)
 
-  // Initialize session ID on component mount
-  useEffect(() => {
-    setSessionId(nanoid())
-  }, [])
-
-  const handleSend = async () => {
-    if (!input.trim()) return
+  const handleAction = async (prompt: string) => {
+    if (!authState.user) return
 
     const userMessage: Message = {
       id: nanoid(),
-      content: input,
-      role: 'user' as const
+      content: prompt,
+      role: 'user' as MessageRole
     }
 
     setChatState(prev => ({
@@ -46,175 +43,84 @@ export default function ChatInterface() {
       messages: [...prev.messages, userMessage],
       isLoading: true
     }))
-    setInput('')
 
-    if (mockMode || !config.apiConfigured) {
-      if (!mockMode && !config.apiConfigured) {
-        setShowEndpointWarning(true)
+    try {
+      const payload: ChatApiRequest = {
+        sessionId,
+        userId: authState.user.email,
+        prompt,
+        chatName: `Chat ${new Date().toLocaleString()}`
       }
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      const mockResponse = mockChatResponses[input.toLowerCase()] || mockChatResponses.default
+
+      console.log('Sending request to API:', {
+        url: '/api/chat',
+        payload
+      })
+
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload)
+      })
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error('API Response Error:', {
+          status: response.status,
+          statusText: response.statusText,
+          body: errorText
+        })
+        throw new Error(`API error: ${response.status}`)
+      }
+
+      const data: ChatApiResponse = await response.json()
+      console.log('API Response:', data)
       setChatState(prev => ({
         isLoading: false,
-        messages: [...prev.messages, ...mockResponse]
+        messages: [
+          ...prev.messages,
+          ...(data.assistantResponse ? [{
+            id: nanoid(),
+            role: 'assistant' as MessageRole,
+            content: data.assistantResponse
+          }] : []),
+          ...(data.weatherResponse ? [{
+            id: nanoid(),
+            role: 'weather' as MessageRole,
+            content: data.weatherResponse
+          }] : []),
+          ...(data.specialistResponse ? [{
+            id: nanoid(),
+            role: 'specialist' as MessageRole,
+            content: data.specialistResponse
+          }] : [])
+        ]
       }))
-    } else {
-      try {
-        const payload: ChatApiRequest = {
-          sessionId,
-          userId: config.testUser,
-          prompt: input
-        }
-
-        // Call our Next.js API route instead of the backend directly
-        const response = await fetch('/api/chat', {
-          method: 'POST',
-          headers: { 
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-          },
-          body: JSON.stringify(payload)
-        })
-
-        console.log('Response status:', response.status)
-        
-        if (!response.ok) {
-          const errorText = await response.text()
-          console.error('API Error:', {
-            status: response.status,
-            statusText: response.statusText,
-            body: errorText
-          })
-          throw new Error(`API error: ${response.status} - ${errorText}`)
-        }
-
-        const data: ChatApiResponse = await response.json()
-        console.log('API Response:', data)
-
-        setChatState((prev: ChatState) => ({
-          isLoading: false,
-          messages: [
-            ...prev.messages,
-            ...(data.assistantResponse ? [{
-              id: nanoid(),
-              role: 'assistant' as const,
-              content: data.assistantResponse
-            }] : []),
-            ...(data.weatherResponse ? [{
-              id: nanoid(),
-              role: 'weather' as const,
-              content: data.weatherResponse
-            }] : []),
-            ...(data.specialistResponse ? [{
-              id: nanoid(),
-              role: 'specialist' as const,
-              content: data.specialistResponse
-            }] : [])
-          ]
-        }))
-
-      } catch (error) {
-        console.error('Error details:', error)
-        setShowEndpointWarning(true)
-        // Fallback to mock response on error
-        const mockResponse = mockChatResponses[input.toLowerCase()] || mockChatResponses.default
+    } catch (error) {
+      console.error('Error:', error)
+      // Only show mock data if we're in mock mode
+      if (mockMode) {
+        const mockResponse = mockActionResponses[prompt] || mockActionResponses.default
         setChatState(prev => ({
           isLoading: false,
           messages: [...prev.messages, ...mockResponse]
+        }))
+      } else {
+        setShowEndpointWarning(true)
+        setChatState(prev => ({
+          ...prev,
+          isLoading: false
         }))
       }
     }
   }
 
-  const handleAction = async (prompt: string) => {
-    const userMessage: Message = {
-      id: nanoid(),
-      content: prompt,
-      role: 'user'
-    }
-
-    setChatState(prev => ({
-      ...prev,
-      messages: [...prev.messages, userMessage],
-      isLoading: true
-    }))
-
-    if (mockMode || !config.apiConfigured) {
-      if (!mockMode && !config.apiConfigured) {
-        setShowEndpointWarning(true)
-      }
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      const mockResponse = mockActionResponses[prompt] || mockActionResponses.default || []
-      setChatState(prev => ({
-        isLoading: false,
-        messages: [...prev.messages, ...mockResponse]
-      }))
-    } else {
-      try {
-        const payload: ChatApiRequest = {
-          sessionId,
-          userId: config.testUser,
-          prompt
-        }
-
-        // Call our Next.js API route instead of the backend directly
-        const response = await fetch('/api/chat', {
-          method: 'POST',
-          headers: { 
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-          },
-          body: JSON.stringify(payload)
-        })
-
-        console.log('Response status:', response.status)
-        
-        if (!response.ok) {
-          const errorText = await response.text()
-          console.error('API Error:', {
-            status: response.status,
-            statusText: response.statusText,
-            body: errorText
-          })
-          throw new Error(`API error: ${response.status} - ${errorText}`)
-        }
-
-        const data = await response.json()
-        console.log('API Response:', data)
-
-        setChatState((prev: ChatState) => ({
-          isLoading: false,
-          messages: [
-            ...prev.messages,
-            ...(data.assistantResponse ? [{
-              id: nanoid(),
-              role: 'assistant' as const,
-              content: data.assistantResponse
-            }] : []),
-            ...(data.weatherResponse ? [{
-              id: nanoid(),
-              role: 'weather' as const,
-              content: data.weatherResponse
-            }] : []),
-            ...(data.specialistResponse ? [{
-              id: nanoid(),
-              role: 'specialist' as const,
-              content: data.specialistResponse
-            }] : [])
-          ]
-        }))
-
-      } catch (error) {
-        console.error('Error details:', error)
-        setShowEndpointWarning(true)
-        // Fallback to mock response on error
-        const mockResponse = mockActionResponses.default || []
-        setChatState(prev => ({
-          isLoading: false,
-          messages: [...prev.messages, ...mockResponse]
-        }))
-      }
-    }
+  const handleSend = async () => {
+    if (!input.trim() || !authState.user) return
+    await handleAction(input)
+    setInput('')
   }
 
   const handleClear = () => {
@@ -222,24 +128,27 @@ export default function ChatInterface() {
     setSessionId(nanoid())
   }
 
+  const handleNewChat = () => {
+    handleClear()
+    return nanoid()
+  }
+
+  const handleSelectChat = (id: string) => {
+    console.log('Selected chat:', id)
+  }
+
   return (
-    <>
-      <div className="flex h-screen w-full overflow-hidden">
-        <div className="container mx-auto max-w-4xl p-4 flex flex-col h-full">
-          <Card className="flex-1 flex flex-col overflow-hidden">
-            <CardHeader className="flex flex-col space-y-3 pb-4">
-              <div className="flex justify-between items-center">
-                <h1 className="text-2xl font-bold tracking-tight">Multi-Agent IT Operations Platform</h1>
-                <div className="flex items-center gap-3">
-                  <ThemeToggle />
-                  <div className="h-4 w-px bg-border" />
-                  <div className="flex items-center text-sm">
-                    <User className="h-4 w-4 mr-1.5 text-muted-foreground" />
-                    <span className="text-muted-foreground">{config.testUser}</span>
-                  </div>
-                </div>
-              </div>
-              <div className="flex items-center space-x-2">
+    <div className="flex h-screen w-full overflow-hidden">
+      <ChatSidebar 
+        onNewChat={handleNewChat}
+        onSelectChat={handleSelectChat}
+      />
+      <div className="container mx-auto max-w-4xl p-4 flex flex-col h-full">
+        <Card className="flex-1 flex flex-col overflow-hidden">
+          <CardHeader className="flex flex-row justify-between items-center pb-4">
+            <div className="space-y-2">
+              <h1 className="text-2xl font-bold tracking-tight">Multi-Agent IT Operations Platform</h1>
+              <div className="flex items-center gap-2">
                 <Switch
                   id="mock-mode"
                   checked={mockMode}
@@ -247,67 +156,70 @@ export default function ChatInterface() {
                 />
                 <Label htmlFor="mock-mode">Mock Mode</Label>
               </div>
-            </CardHeader>
-            <CardContent className="flex-1 flex flex-col min-h-0">
-              <div className="flex-1 overflow-y-auto space-y-4 mb-4 px-2 mr-2">
-                {chatState.messages.map((message) => (
-                  <MessageBubble
-                    key={message.id}
-                    content={message.content}
-                    role={message.role}
-                  />
-                ))}
-                {chatState.isLoading && (
-                  <div className="text-sm text-muted-foreground animate-pulse">
-                    Processing...
-                  </div>
-                )}
-              </div>
-              
-              <div className="mt-auto">
-                <ActionButtons onAction={handleAction} />
-                
-                <div className="relative">
-                  <Textarea
-                    value={input}
-                    onChange={(e) => setInput(e.target.value)}
-                    placeholder="Type your question here..."
-                    className="pr-24 resize-none"
-                    rows={3}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault()
-                        handleSend()
-                      }
-                    }}
-                  />
-                  <div className="absolute right-2 bottom-2 flex gap-2">
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      onClick={handleClear}
-                      title="Clear chat"
-                    >
-                      <Eraser className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      size="icon"
-                      onClick={handleSend}
-                      disabled={!input.trim() || chatState.isLoading}
-                    >
-                      <Send className="h-4 w-4" />
-                    </Button>
-                  </div>
+            </div>
+            <UserHeader />
+          </CardHeader>
+
+          <CardContent className="flex-1 flex flex-col min-h-0">
+            <div className="flex-1 overflow-y-auto space-y-4 mb-4 px-2 mr-2">
+              {chatState.messages.map((message) => (
+                <MessageBubble
+                  key={message.id}
+                  content={message.content}
+                  role={message.role}
+                />
+              ))}
+              {chatState.isLoading && (
+                <div className="text-sm text-muted-foreground animate-pulse">
+                  Processing...
+                </div>
+              )}
+            </div>
+
+            <div className="mt-auto space-y-4">
+              <ActionButtons onAction={handleAction} />
+
+              <div className="relative">
+                <Textarea
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  placeholder="Type your question here..."
+                  className="pr-24 resize-none"
+                  rows={3}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault()
+                      handleSend()
+                    }
+                  }}
+                />
+                <div className="absolute right-2 bottom-2 flex gap-2">
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    onClick={handleClear}
+                    title="Clear chat"
+                  >
+                    <Eraser className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    size="icon"
+                    onClick={handleSend}
+                    disabled={!input.trim() || chatState.isLoading}
+                  >
+                    <Send className="h-4 w-4" />
+                  </Button>
                 </div>
               </div>
-            </CardContent>
-          </Card>
-        </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <EndpointWarningDialog
+          open={showEndpointWarning}
+          onOpenChange={setShowEndpointWarning}
+        />
       </div>
-      <EndpointWarningDialog 
-        open={showEndpointWarning} 
-        onOpenChange={setShowEndpointWarning}
-      />
-    </>
+    </div>
   )
 }

@@ -29,6 +29,7 @@ node_modules/
 # Environment variables
 .env*.local
 
+
 # TypeScript
 *.tsbuildinfo
 next-env.d.ts

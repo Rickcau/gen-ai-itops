@@ -12,6 +12,9 @@ using Azure.Identity;
 using Azure.Core;
 using Plugins;
 using Microsoft.Extensions.DependencyInjection;
+using api_gen_ai_itops.Models;
+using System.Text.Json;
+using Microsoft.AspNetCore.Cors;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -30,11 +33,30 @@ var config = new Configuration();
 builder.Configuration.Bind(config);
 config.Validate();
 
+// Add debug logging to see what's being loaded
+Console.WriteLine($"CosmosDb Settings: {JsonSerializer.Serialize(config.CosmosDb, new JsonSerializerOptions { WriteIndented = true })}");
+
 // Configure Azure credential based on environment
 TokenCredential azureCredential;
 if (builder.Environment.IsDevelopment())
 {
-    azureCredential = new InteractiveBrowserCredential();
+    var accountToUse = builder.Configuration["Azure:AccountToUse"];
+    if (string.IsNullOrEmpty(accountToUse))
+        throw new ArgumentException("Azure:AccountToUse is not configured for development");
+    
+    azureCredential = new DefaultAzureCredential(new DefaultAzureCredentialOptions
+    {
+        TenantId = builder.Configuration["Azure:TenantId"],
+        SharedTokenCacheUsername = accountToUse,
+        // Exclude other credential types to ensure we only use CLI credentials
+        ExcludeEnvironmentCredential = true,
+        ExcludeManagedIdentityCredential = true,
+        ExcludeVisualStudioCredential = true,
+        ExcludeVisualStudioCodeCredential = true,
+        ExcludeInteractiveBrowserCredential = true
+    });
+
+    // azureCredential = new InteractiveBrowserCredential();
 }
 else
 {
@@ -44,6 +66,20 @@ else
     
     azureCredential = new ManagedIdentityCredential(config.AzureManagedIdentity);
 }
+
+// Add CosmosDB configuration
+builder.Services.Configure<CosmosDbOptions>(options =>
+{
+    options.AccountUri = config.CosmosDb.AccountUri;
+    options.TenantId = config.CosmosDb.TenantId;
+    options.DatabaseName = config.CosmosDb.DatabaseName;
+    options.ChatHistoryContainerName = config.CosmosDb.ChatHistoryContainerName;
+    options.UsersContainerName = config.CosmosDb.UsersContainerName;
+    options.CapabilitiesContainerName = config.CosmosDb.CapabilitiesContainerName;
+});
+
+// Register CosmosDbService as singleton
+builder.Services.AddSingleton<ICosmosDbService, CosmosDbService>();
 
 // Register the credential and plugins as singletons
 builder.Services.AddSingleton<TokenCredential>(azureCredential);
@@ -131,6 +167,14 @@ builder.Services.AddTransient<Kernel>(s =>
 builder.Services.AddSingleton<IChatCompletionService>(sp =>
                      sp.GetRequiredService<Kernel>().GetRequiredService<IChatCompletionService>());
 
+builder.Services.AddScoped<ChatHistory>(s =>
+{
+    var chathistory = new ChatHistory();
+    return chathistory;
+});
+
+// We can remove the ChatHistory Manager once we have the Cosmos persisting the chathistory.
+
 builder.Services.AddSingleton<api_gen_ai_itops.Services.IChatHistoryManager, ChatHistoryManager>();
 
 builder.Services.AddHostedService<ChatHistoryCleanupService>();
@@ -166,6 +210,7 @@ builder.Services.AddSwaggerGen(c =>
                 new string[] {}
             }
         });
+    c.EnableAnnotations();
 });
 
 var app = builder.Build();

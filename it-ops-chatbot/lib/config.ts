@@ -1,9 +1,35 @@
 export const config = {
-  apiBaseUrl: process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, '') || 'https://localhost:7049',
-  apiConfigured: process.env.NEXT_PUBLIC_API_CONFIGURED === 'true',
-  testUser: process.env.NEXT_PUBLIC_TEST_USER || 'test.user@example.com',
-  apiKey: process.env.NEXT_PUBLIC_API_KEY || '',
-  endpoints: {
-    chat: 'chat'
+  apiBaseUrl: process.env.API_BASE_URL || 'http://localhost:5000',
+  apiKey: process.env.API_KEY || '',
+  isLocalDevelopment: typeof window !== 'undefined' && window.location.hostname === 'localhost',
+  apiConfigured: true // Controls mock mode
+} as const
+
+export const getCurrentUser = async () => {
+  try {
+    // If running locally, use az CLI through our API route
+    if (config.isLocalDevelopment) {
+      const response = await fetch('/api/user');
+      if (!response.ok) {
+        throw new Error('Please login using az login first');
+      }
+      return await response.json();
+    } 
+    // If running in Azure App Service, use Easy Auth
+    else {
+      const response = await fetch('/.auth/me');
+      if (!response.ok) {
+        throw new Error('Authentication required');
+      }
+      const authData = await response.json();
+      const userDetails = authData?.clientPrincipal;
+      if (!userDetails?.userDetails) {
+        throw new Error('No user details found');
+      }
+      return { email: userDetails.userDetails };
+    }
+  } catch (error) {
+    console.error('Error getting user info:', error);
+    throw error;
   }
-} as const 
+}
