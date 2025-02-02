@@ -10,9 +10,11 @@ import { config } from '@/lib/config'
 import { CapabilityDialog } from '@/components/capability-dialog'
 import type { Capability } from '@/types/capabilities'
 import { nanoid } from 'nanoid'
+import { useAuth } from '@/components/providers/auth-provider'
 
 export default function AdminPage() {
   const router = useRouter()
+  const { authState } = useAuth()
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editingCapability, setEditingCapability] = useState<Capability | undefined>()
   const [capabilities, setCapabilities] = useState<Capability[]>([
@@ -106,7 +108,7 @@ export default function AdminPage() {
           <div className="h-4 w-px bg-border" />
           <div className="flex items-center text-sm">
             <User className="h-4 w-4 mr-1.5 text-muted-foreground" />
-            <span className="text-muted-foreground">{config.testUser}</span>
+            <span className="text-muted-foreground">{authState.user?.email}</span>
           </div>
         </div>
       </div>
