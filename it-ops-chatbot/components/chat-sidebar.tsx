@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, forwardRef } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -20,10 +20,7 @@ interface ChatItem {
   isEditing?: boolean
 }
 
-export const ChatSidebar = forwardRef<
-  { updateChatTitle: (id: string, title: string) => void },
-  ChatSidebarProps
->(({ onNewChat, onSelectChat }, _ref) => {
+export const ChatSidebar = ({ onNewChat, onSelectChat }: ChatSidebarProps) => {
   const router = useRouter()
   const [isOpen, setIsOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
@@ -234,6 +231,4 @@ export const ChatSidebar = forwardRef<
       </div>
     </>
   )
-})
-
-ChatSidebar.displayName = 'ChatSidebar' 
+} 
