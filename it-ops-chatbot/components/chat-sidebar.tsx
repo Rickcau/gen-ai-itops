@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, forwardRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -20,7 +20,11 @@ interface ChatItem {
   isEditing?: boolean
 }
 
-export const ChatSidebar = ({ onNewChat, onSelectChat }: ChatSidebarProps) => {
+export const ChatSidebar = forwardRef<
+  { updateChatTitle: (id: string, title: string) => void },
+  ChatSidebarProps
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+>(({ onNewChat, onSelectChat }, _ref) => {
   const router = useRouter()
   const [isOpen, setIsOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
@@ -231,4 +235,6 @@ export const ChatSidebar = ({ onNewChat, onSelectChat }: ChatSidebarProps) => {
       </div>
     </>
   )
-} 
+})
+
+ChatSidebar.displayName = 'ChatSidebar' 
