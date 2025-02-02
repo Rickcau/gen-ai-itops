@@ -45,67 +45,74 @@ export default function ChatInterface() {
       isLoading: true
     }))
 
-    if (mockMode || !config.apiConfigured) {
-      if (!mockMode && !config.apiConfigured) {
-        setShowEndpointWarning(true)
+    try {
+      const payload: ChatApiRequest = {
+        sessionId,
+        userId: authState.user.email,
+        prompt,
+        chatName: `Chat ${new Date().toLocaleString()}`
       }
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      const mockResponse = mockActionResponses[prompt] || mockActionResponses.default
+
+      console.log('Sending request to API:', {
+        url: '/api/chat',
+        payload
+      })
+
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload)
+      })
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error('API Response Error:', {
+          status: response.status,
+          statusText: response.statusText,
+          body: errorText
+        })
+        throw new Error(`API error: ${response.status}`)
+      }
+
+      const data: ChatApiResponse = await response.json()
+      console.log('API Response:', data)
       setChatState(prev => ({
         isLoading: false,
-        messages: [...prev.messages, ...mockResponse]
+        messages: [
+          ...prev.messages,
+          ...(data.assistantResponse ? [{
+            id: nanoid(),
+            role: 'assistant' as MessageRole,
+            content: data.assistantResponse
+          }] : []),
+          ...(data.weatherResponse ? [{
+            id: nanoid(),
+            role: 'weather' as MessageRole,
+            content: data.weatherResponse
+          }] : []),
+          ...(data.specialistResponse ? [{
+            id: nanoid(),
+            role: 'specialist' as MessageRole,
+            content: data.specialistResponse
+          }] : [])
+        ]
       }))
-    } else {
-      try {
-        const payload: ChatApiRequest = {
-          sessionId,
-          userId: authState.user.email,
-          prompt
-        }
-
-        const response = await fetch(`${config.apiBaseUrl}/${config.endpoints.chat}`, {
-          method: 'POST',
-          credentials: 'include',
-          headers: { 
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-          },
-          body: JSON.stringify(payload)
-        })
-
-        if (!response.ok) {
-          throw new Error(`API error: ${response.status}`)
-        }
-
-        const data: ChatApiResponse = await response.json()
-        setChatState(prev => ({
-          isLoading: false,
-          messages: [
-            ...prev.messages,
-            ...(data.assistantResponse ? [{
-              id: nanoid(),
-              role: 'assistant' as MessageRole,
-              content: data.assistantResponse
-            }] : []),
-            ...(data.weatherResponse ? [{
-              id: nanoid(),
-              role: 'weather' as MessageRole,
-              content: data.weatherResponse
-            }] : []),
-            ...(data.specialistResponse ? [{
-              id: nanoid(),
-              role: 'specialist' as MessageRole,
-              content: data.specialistResponse
-            }] : [])
-          ]
-        }))
-      } catch (error) {
-        console.error('Error:', error)
-        setShowEndpointWarning(true)
+    } catch (error) {
+      console.error('Error:', error)
+      // Only show mock data if we're in mock mode
+      if (mockMode) {
         const mockResponse = mockActionResponses[prompt] || mockActionResponses.default
         setChatState(prev => ({
           isLoading: false,
           messages: [...prev.messages, ...mockResponse]
+        }))
+      } else {
+        setShowEndpointWarning(true)
+        setChatState(prev => ({
+          ...prev,
+          isLoading: false
         }))
       }
     }
@@ -155,9 +162,7 @@ export default function ChatInterface() {
           </CardHeader>
 
           <CardContent className="flex-1 flex flex-col min-h-0">
-            <ActionButtons onAction={handleAction} />
-            
-            <div className="flex-1 overflow-y-auto space-y-4 mb-4 px-2 mr-2 mt-4">
+            <div className="flex-1 overflow-y-auto space-y-4 mb-4 px-2 mr-2">
               {chatState.messages.map((message) => (
                 <MessageBubble
                   key={message.id}
@@ -172,36 +177,40 @@ export default function ChatInterface() {
               )}
             </div>
 
-            <div className="relative">
-              <Textarea
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                placeholder="Type your question here..."
-                className="pr-24 resize-none"
-                rows={3}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault()
-                    handleSend()
-                  }
-                }}
-              />
-              <div className="absolute right-2 bottom-2 flex gap-2">
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  onClick={handleClear}
-                  title="Clear chat"
-                >
-                  <Eraser className="h-4 w-4" />
-                </Button>
-                <Button
-                  size="icon"
-                  onClick={handleSend}
-                  disabled={!input.trim() || chatState.isLoading}
-                >
-                  <Send className="h-4 w-4" />
-                </Button>
+            <div className="mt-auto space-y-4">
+              <ActionButtons onAction={handleAction} />
+
+              <div className="relative">
+                <Textarea
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  placeholder="Type your question here..."
+                  className="pr-24 resize-none"
+                  rows={3}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault()
+                      handleSend()
+                    }
+                  }}
+                />
+                <div className="absolute right-2 bottom-2 flex gap-2">
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    onClick={handleClear}
+                    title="Clear chat"
+                  >
+                    <Eraser className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    size="icon"
+                    onClick={handleSend}
+                    disabled={!input.trim() || chatState.isLoading}
+                  >
+                    <Send className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
             </div>
           </CardContent>
