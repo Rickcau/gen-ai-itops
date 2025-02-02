@@ -21,12 +21,14 @@ it-ops-chatbot.zip
 *.userosscache
 *.sln.docstates
 *.cursorrules
+*.cursor
 
 # Dependencies
 node_modules/
 
 # Environment variables
 .env*.local
+
 
 # TypeScript
 *.tsbuildinfo
