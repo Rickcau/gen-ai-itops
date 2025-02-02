@@ -61,13 +61,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const logout = () => {
-    setAuthState({
-      user: null,
-      isLoading: false,
-      error: null,
-      isAuthenticated: false
-    });
+  const logout = async () => {
+    try {
+      // Add any async cleanup if needed in the future
+      setAuthState({
+        user: null,
+        isLoading: false,
+        error: null,
+        isAuthenticated: false
+      });
+    } catch (error) {
+      console.error('Logout error:', error);
+      setAuthState({
+        user: null,
+        isLoading: false,
+        error: error instanceof Error ? error.message : 'Logout failed',
+        isAuthenticated: false
+      });
+    }
   };
 
   return (
