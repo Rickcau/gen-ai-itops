@@ -1,6 +1,6 @@
-import { InteractiveBrowserCredential } from '@azure/identity';
-
 export const config = {
+  apiBaseUrl: process.env.API_BASE_URL || 'http://localhost:5000',
+  apiKey: process.env.API_KEY || '',
   isLocalDevelopment: typeof window !== 'undefined' && window.location.hostname === 'localhost',
   apiConfigured: true // Controls mock mode
 } as const

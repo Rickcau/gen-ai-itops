@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ThemeToggle } from '@/components/theme-switcher'
 import { ArrowLeft, Settings, Shield, Zap, User, Plus } from 'lucide-react'
-import { config } from '@/lib/config'
 import { CapabilityDialog } from '@/components/capability-dialog'
 import type { Capability } from '@/types/capabilities'
 import { nanoid } from 'nanoid'

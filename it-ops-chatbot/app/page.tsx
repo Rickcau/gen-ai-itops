@@ -14,8 +14,7 @@ import { EndpointWarningDialog } from '@/components/endpoint-warning-dialog'
 import { UserHeader } from '@/components/user-header'
 import type { Message, ChatState, MessageRole } from '@/types/chat'
 import type { ChatApiRequest, ChatApiResponse } from '@/types/api'
-import { mockChatResponses, mockActionResponses } from '@/lib/mockData'
-import { config } from '@/lib/config'
+import { mockActionResponses } from '@/lib/mockData'
 import { ChatSidebar } from '@/components/chat-sidebar'
 import { useAuth } from '@/components/providers/auth-provider'
 
@@ -26,7 +25,7 @@ export default function ChatInterface() {
     isLoading: false
   })
   const [input, setInput] = useState('')
-  const [mockMode, setMockMode] = useState(!config.apiConfigured)
+  const [mockMode, setMockMode] = useState(false)
   const [sessionId, setSessionId] = useState(nanoid())
   const [showEndpointWarning, setShowEndpointWarning] = useState(false)
 

@@ -23,7 +23,7 @@ interface ChatItem {
 export const ChatSidebar = forwardRef<
   { updateChatTitle: (id: string, title: string) => void },
   ChatSidebarProps
->(({ onNewChat, onSelectChat }, ref) => {
+>(({ onNewChat, onSelectChat }, _ref) => {
   const router = useRouter()
   const [isOpen, setIsOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
