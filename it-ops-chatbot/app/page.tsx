@@ -8,7 +8,6 @@ import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { MessageBubble } from '@/components/message-bubble'
 import { ActionButtons } from '@/components/action-buttons'
-import { ThemeToggle } from '@/components/theme-switcher'
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import { EndpointWarningDialog } from '@/components/endpoint-warning-dialog'
@@ -31,13 +30,13 @@ export default function ChatInterface() {
   const [sessionId, setSessionId] = useState(nanoid())
   const [showEndpointWarning, setShowEndpointWarning] = useState(false)
 
-  const handleSend = async () => {
-    if (!input.trim() || !authState.user) return
+  const handleAction = async (prompt: string) => {
+    if (!authState.user) return
 
     const userMessage: Message = {
       id: nanoid(),
-      content: input,
-      role: 'user'
+      content: prompt,
+      role: 'user' as MessageRole
     }
 
     setChatState(prev => ({
@@ -45,14 +44,13 @@ export default function ChatInterface() {
       messages: [...prev.messages, userMessage],
       isLoading: true
     }))
-    setInput('')
 
     if (mockMode || !config.apiConfigured) {
       if (!mockMode && !config.apiConfigured) {
         setShowEndpointWarning(true)
       }
       await new Promise(resolve => setTimeout(resolve, 1000))
-      const mockResponse = mockChatResponses[input.toLowerCase()] || mockChatResponses.default
+      const mockResponse = mockActionResponses[prompt] || mockActionResponses.default
       setChatState(prev => ({
         isLoading: false,
         messages: [...prev.messages, ...mockResponse]
@@ -62,7 +60,7 @@ export default function ChatInterface() {
         const payload: ChatApiRequest = {
           sessionId,
           userId: authState.user.email,
-          prompt: input
+          prompt
         }
 
         const response = await fetch(`${config.apiBaseUrl}/${config.endpoints.chat}`, {
@@ -104,13 +102,19 @@ export default function ChatInterface() {
       } catch (error) {
         console.error('Error:', error)
         setShowEndpointWarning(true)
-        const mockResponse = mockChatResponses[input.toLowerCase()] || mockChatResponses.default
+        const mockResponse = mockActionResponses[prompt] || mockActionResponses.default
         setChatState(prev => ({
           isLoading: false,
           messages: [...prev.messages, ...mockResponse]
         }))
       }
     }
+  }
+
+  const handleSend = async () => {
+    if (!input.trim() || !authState.user) return
+    await handleAction(input)
+    setInput('')
   }
 
   const handleClear = () => {
@@ -135,26 +139,25 @@ export default function ChatInterface() {
       />
       <div className="container mx-auto max-w-4xl p-4 flex flex-col h-full">
         <Card className="flex-1 flex flex-col overflow-hidden">
-          <CardHeader className="flex flex-col space-y-3 pb-4">
-            <div className="flex justify-between items-center">
+          <CardHeader className="flex flex-row justify-between items-center pb-4">
+            <div className="space-y-2">
               <h1 className="text-2xl font-bold tracking-tight">Multi-Agent IT Operations Platform</h1>
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-2">
-                  <Switch
-                    id="mock-mode"
-                    checked={mockMode}
-                    onCheckedChange={setMockMode}
-                  />
-                  <Label htmlFor="mock-mode">Mock Mode</Label>
-                </div>
-                <div className="h-4 w-px bg-border" />
-                <UserHeader />
+              <div className="flex items-center gap-2">
+                <Switch
+                  id="mock-mode"
+                  checked={mockMode}
+                  onCheckedChange={setMockMode}
+                />
+                <Label htmlFor="mock-mode">Mock Mode</Label>
               </div>
             </div>
+            <UserHeader />
           </CardHeader>
 
           <CardContent className="flex-1 flex flex-col min-h-0">
-            <div className="flex-1 overflow-y-auto space-y-4 mb-4 px-2 mr-2">
+            <ActionButtons onAction={handleAction} />
+            
+            <div className="flex-1 overflow-y-auto space-y-4 mb-4 px-2 mr-2 mt-4">
               {chatState.messages.map((message) => (
                 <MessageBubble
                   key={message.id}
@@ -169,44 +172,37 @@ export default function ChatInterface() {
               )}
             </div>
 
-            <div className="mt-auto">
-              <div className="relative">
-                <Textarea
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  placeholder="Type your question here..."
-                  className="pr-24 resize-none"
-                  rows={3}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault()
-                      handleSend()
-                    }
-                  }}
-                />
-                <div className="absolute right-2 bottom-2 flex gap-2">
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    onClick={handleClear}
-                    title="Clear chat"
-                  >
-                    <Eraser className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    size="icon"
-                    onClick={handleSend}
-                    disabled={!input.trim() || chatState.isLoading}
-                  >
-                    <Send className="h-4 w-4" />
-                  </Button>
-                </div>
+            <div className="relative">
+              <Textarea
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                placeholder="Type your question here..."
+                className="pr-24 resize-none"
+                rows={3}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault()
+                    handleSend()
+                  }
+                }}
+              />
+              <div className="absolute right-2 bottom-2 flex gap-2">
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={handleClear}
+                  title="Clear chat"
+                >
+                  <Eraser className="h-4 w-4" />
+                </Button>
+                <Button
+                  size="icon"
+                  onClick={handleSend}
+                  disabled={!input.trim() || chatState.isLoading}
+                >
+                  <Send className="h-4 w-4" />
+                </Button>
               </div>
-
-              <ActionButtons onAction={(prompt) => {
-                setInput(prompt)
-                handleSend()
-              }} />
             </div>
           </CardContent>
         </Card>

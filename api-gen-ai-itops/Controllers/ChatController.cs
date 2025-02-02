@@ -144,7 +144,6 @@ namespace api_gen_ai_itops.Controllers
                 //// var chatHistory = _chatHistoryManager.GetOrCreateChatHistory(sessionId);
                 //_chatHistory.AddUserMessage(chatRequest.Prompt); // add user message to chatHistory
 
-
                 // Create agent container with all necessary dependencies
                 var agentContainer = new AgentContainer(_chat, _kernel, _aiSearchPlugin, _runbookPlugin, _gitHubWorkflowPlugin, _weatherPlugin);
 
@@ -164,6 +163,22 @@ namespace api_gen_ai_itops.Controllers
                     _chatHistory.AddAssistantMessage(response.SpecialistResponse);
                     await CreateNewMessage("message", "Specialist", chatRequest.SessionId, response.SpecialistResponse);
                 }
+
+                _logger.LogInformation($"Chat Session ID: {chatRequest.SessionId}");
+                _logger.LogInformation("Current ChatHistory contents:");
+
+
+                int currentChatHistoryLength = _chatHistory.Count;
+                // After interacting with chat completion service
+                for (int i = currentChatHistoryLength; i < _chatHistory.Count; i++)
+                {
+                    var message = _chatHistory[i];
+                    Console.WriteLine($"[{message.Role}] {message.Content}");
+                    // Or use ILogger.LogInformation()
+                }
+
+                // If you need the count, you can use LINQ
+                _logger.LogInformation($"Total messages in ChatHistory: {_chatHistory.Count()}");
 
                 // RDC : Debugging List Workflow issue.  the ProcessChatRequestAsync is handling the request properly, it's something on the UI side that 
                 // is not handling this.

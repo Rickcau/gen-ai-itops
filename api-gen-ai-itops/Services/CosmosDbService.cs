@@ -384,9 +384,13 @@ namespace api_gen_ai_itops.Services
         /// <returns>List of chat message items for the specified session.</returns>
         public async Task<List<Message>> GetSessionMessagesAsync(string sessionId)
         {
-            QueryDefinition query = new QueryDefinition("SELECT * FROM c WHERE c.SessionId = @sessionId AND c.Type = @type")
+            // Add logging to debug the query parameters
+            Console.WriteLine($"Querying messages for SessionId: {sessionId}");
+            QueryDefinition query = new QueryDefinition("SELECT * FROM c WHERE c.sessionId = @sessionId AND c.type = @type")
                 .WithParameter("@sessionId", sessionId)
-                .WithParameter("@type", nameof(Message).ToLower());
+                .WithParameter("@type", "message");
+
+            Console.WriteLine($"Query: {query.QueryText}");
 
             FeedIterator<Message> results = _chatHistoryContainer.GetItemQueryIterator<Message>(query);
 
@@ -394,8 +398,11 @@ namespace api_gen_ai_itops.Services
             while (results.HasMoreResults)
             {
                 FeedResponse<Message> response = await results.ReadNextAsync();
+                Console.WriteLine($"Retreived {response.Count} messages in this batch");
                 output.AddRange(response);
             }
+            // Log final count
+            Console.WriteLine($"Total messages retrieved: {output.Count}");
             return output;
         }
 
