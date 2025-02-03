@@ -16,10 +16,18 @@ import { useChatSessions } from '@/src/hooks/useChatSessions'
 import { ClearChatDialog } from '@/components/clear-chat-dialog'
 import { EndpointWarningDialog } from '@/components/endpoint-warning-dialog'
 import { UserHeader } from '@/components/user-header'
-import type { Message, ChatState, MessageRole } from '@/types/chat'
+import type { ChatState } from '@/types/chat'
 import type { ChatApiRequest, ChatApiResponse } from '@/types/api'
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
+
+type MessageRole = 'user' | 'assistant' | 'specialist' | 'weather'
+
+interface Message {
+  id: string
+  content: string
+  role: MessageRole
+}
 
 export default function ChatInterface() {
   const { authState } = useAuth();
@@ -240,17 +248,24 @@ export default function ChatInterface() {
       const response = await fetch(`/api/sessions/${sid}/messages`)
       if (response.ok) {
         const data = await response.json()
+        
         // Map the API response messages to our Message type
         const messages = data.map((msg: any) => ({
           id: msg.id,
-          content: msg.prompt,
-          role: msg.sender.toLowerCase() as MessageRole
+          content: msg.prompt || '',  // Ensure we have a fallback for empty content
+          role: (msg.sender || 'user').toLowerCase() as MessageRole  // Ensure we have a fallback role
         }))
-        setChatState({
+        
+        // Debug log the messages we're about to set
+        console.log(`Setting ${messages.length} messages in state:`, messages)
+        
+        setChatState(prevState => ({
+          ...prevState,
           messages,
           isLoading: false
-        })
+        }))
       } else {
+        console.error('Failed to fetch messages:', response.status, response.statusText)
         setChatState({
           messages: [],
           isLoading: false
@@ -314,13 +329,21 @@ export default function ChatInterface() {
 
               {/* Chat messages */}
               <div className="flex-1 overflow-y-auto space-y-6 px-6">
-                {chatState.messages.map((message) => (
-                  <MessageBubble
-                    key={message.id}
-                    content={message.content}
-                    role={message.role}
-                  />
-                ))}
+                <div className="space-y-6">
+                  {chatState.messages.length > 0 ? (
+                    chatState.messages.map((message) => (
+                      <MessageBubble
+                        key={message.id}
+                        content={message.content}
+                        role={message.role}
+                      />
+                    ))
+                  ) : (
+                    <div className="text-center text-muted-foreground py-4">
+                      No messages in this chat yet
+                    </div>
+                  )}
+                </div>
                 {chatState.isLoading && (
                   <div className="text-sm text-muted-foreground animate-pulse">
                     Processing...
@@ -381,12 +404,4 @@ export default function ChatInterface() {
       </div>
     </div>
   )
-}
-
-type MessageRole = 'user' | 'assistant' | 'specialist' | 'weather'
-
-interface Message {
-  id: string
-  content: string
-  role: MessageRole
 }
