@@ -19,7 +19,7 @@ export async function GET(
     }
 
     const apiUrl = `${API_BASE_URL}/sessions/${sessionId}/messages`
-    console.log('Making backend request to:', apiUrl)
+    console.log('Fetching messages from:', apiUrl)
 
     const response = await fetch(apiUrl, {
       headers: {
@@ -45,7 +45,12 @@ export async function GET(
     }
 
     const data = await response.json()
-    console.log('Backend response data:', data)
+    console.log('Received messages from backend:', {
+      count: Array.isArray(data) ? data.length : 0,
+      messages: data
+    })
+
+    // Ensure we're returning the full array of messages
     return NextResponse.json(data)
   } catch (error) {
     console.error('Error in messages API route:', {

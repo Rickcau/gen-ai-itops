@@ -233,6 +233,7 @@ export default function ChatInterface() {
   }
 
   const handleSelectChat = async (sid: string, chatName: string) => {
+    console.log('Selecting chat session:', sid)
     // Clear current messages before loading new ones
     setChatState({
       messages: [],
@@ -245,27 +246,49 @@ export default function ChatInterface() {
 
     try {
       // Fetch messages for this session
+      console.log('Fetching messages for session:', sid)
       const response = await fetch(`/api/sessions/${sid}/messages`)
+      
       if (response.ok) {
         const data = await response.json()
+        console.log('Raw response data:', data)
+        
+        if (!Array.isArray(data)) {
+          console.error('Expected array of messages but got:', typeof data)
+          throw new Error('Invalid response format')
+        }
         
         // Map the API response messages to our Message type
-        const messages = data.map((msg: any) => ({
-          id: msg.id,
-          content: msg.prompt || '',  // Ensure we have a fallback for empty content
-          role: (msg.sender || 'user').toLowerCase() as MessageRole  // Ensure we have a fallback role
-        }))
+        const messages = data.map((msg: any) => {
+          console.log('Processing message:', {
+            id: msg.id,
+            content: msg.prompt || '',
+            role: msg.sender?.toLowerCase() || 'user'
+          })
+          return {
+            id: msg.id,
+            content: msg.prompt || '',  // Ensure we have a fallback for empty content
+            role: (msg.sender || 'user').toLowerCase() as MessageRole  // Ensure we have a fallback role
+          }
+        })
         
-        // Debug log the messages we're about to set
-        console.log(`Setting ${messages.length} messages in state:`, messages)
+        console.log(`Processed ${messages.length} messages:`, messages)
         
-        setChatState(prevState => ({
-          ...prevState,
-          messages,
-          isLoading: false
-        }))
+        setChatState(prevState => {
+          console.log('Previous state:', prevState)
+          const newState = {
+            ...prevState,
+            messages,
+            isLoading: false
+          }
+          console.log('New state:', newState)
+          return newState
+        })
       } else {
-        console.error('Failed to fetch messages:', response.status, response.statusText)
+        console.error('Failed to fetch messages:', {
+          status: response.status,
+          statusText: response.statusText
+        })
         setChatState({
           messages: [],
           isLoading: false
