@@ -1,97 +1,91 @@
 'use client'
 
-import { useState, forwardRef } from 'react'
+import { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Settings, MessageSquarePlus, Search, Pencil, Trash2, Check, Shield } from 'lucide-react'
+import { MessageSquarePlus, Search, Trash2, Settings, Shield } from 'lucide-react'
 import { format } from 'date-fns'
+import { nanoid } from 'nanoid'
+import { useChatSessions } from '@/src/hooks/useChatSessions'
+import { DeleteSessionDialog } from './delete-session-dialog'
 
 interface ChatSidebarProps {
   onNewChat: () => void
-  onSelectChat: (id: string) => void
+  onSelectChat: (sessionId: string, chatName: string) => void
+  userId: string
 }
 
-interface ChatItem {
-  id: string
-  title: string
-  date: Date
-  isEditing?: boolean
-}
-
-export const ChatSidebar = forwardRef<
-  { updateChatTitle: (id: string, title: string) => void },
-  ChatSidebarProps
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
->(({ onNewChat, onSelectChat }, _ref) => {
-  const router = useRouter()
+export function ChatSidebar({ onNewChat, onSelectChat, userId }: ChatSidebarProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
-  const [chatHistory, setChatHistory] = useState<ChatItem[]>([])
-  const [editingTitle, setEditingTitle] = useState('')
+  const router = useRouter()
+
+  const {
+    sessions,
+    isLoading,
+    error,
+    addSession,
+    removeSession
+  } = useChatSessions(userId)
+
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [sessionToDelete, setSessionToDelete] = useState<string | null>(null)
 
   const handleNewChat = () => {
-    // Stub: Would normally create a new chat and save to storage/DB
-    const newChat = {
-      id: Math.random().toString(),
-      title: 'New Chat',
-      date: new Date(),
+    const newSession = {
+      sessionId: nanoid(),
+      chatName: `Chat ${new Date().toLocaleString()}`,
+      createdAt: new Date().toISOString()
     }
-    setChatHistory([newChat, ...chatHistory])
-    onNewChat()
+    addSession(newSession)
+    onSelectChat(newSession.sessionId, newSession.chatName)
   }
 
-  const startEditing = (chat: ChatItem) => {
-    setChatHistory(prev =>
-      prev.map(c =>
-        c.id === chat.id ? { ...c, isEditing: true } : { ...c, isEditing: false }
-      )
+  const handleDeleteClick = (sessionId: string) => {
+    setSessionToDelete(sessionId)
+    setShowDeleteDialog(true)
+  }
+
+  const handleDeleteSubmit = async (data: { removeFromStorage: boolean }) => {
+    if (sessionToDelete) {
+      if (data.removeFromStorage) {
+        try {
+          // Call our Next.js API route instead of the backend directly
+          const response = await fetch(`/api/sessions/${sessionToDelete}`, {
+            method: 'DELETE'
+          })
+          
+          if (!response.ok) {
+            console.error('Error deleting session:', response.statusText)
+            return // Don't remove from local if server delete failed
+          }
+        } catch (err) {
+          console.error('Error deleting session:', err)
+          return // Don't remove from local if server delete failed
+        }
+      }
+      
+      // Only remove from local list/cache if server delete succeeded or wasn't requested
+      removeSession(sessionToDelete)
+    }
+    setSessionToDelete(null)
+  }
+
+  // If no userId is provided, show a message
+  if (!userId) {
+    return (
+      <div className="text-center py-4 text-muted-foreground">
+        Please log in to view chat sessions
+      </div>
     )
-    setEditingTitle(chat.title)
   }
 
-  const handleEditSave = (chat: ChatItem) => {
-    if (editingTitle.trim()) {
-      setChatHistory(prev =>
-        prev.map(c =>
-          c.id === chat.id ? { ...c, title: editingTitle.trim(), isEditing: false } : c
-        )
-      )
-    }
-  }
-
-  const handleDelete = (chatId: string) => {
-    if (confirm('Are you sure you want to delete this chat?')) {
-      setChatHistory(prev => prev.filter(chat => chat.id !== chatId))
-    }
-  }
-
-  const handleKeyDown = (e: React.KeyboardEvent, chat: ChatItem) => {
-    if (e.key === 'Enter') {
-      handleEditSave(chat)
-    } else if (e.key === 'Escape') {
-      setChatHistory(prev =>
-        prev.map(c =>
-          c.id === chat.id ? { ...c, isEditing: false } : c
-        )
-      )
-    }
-  }
-
-  // Filter chats based on search query
-  const filteredChats = chatHistory
-    .filter((chat) => chat.title.toLowerCase().includes(searchQuery.toLowerCase()))
-
-  // Group chats by date
-  const groupedChats = filteredChats.reduce((groups, chat) => {
-    const date = format(chat.date, 'EEEE')
-    if (!groups[date]) {
-      groups[date] = []
-    }
-    groups[date].push(chat)
-    return groups
-  }, {} as Record<string, typeof chatHistory>)
+  // Filter sessions based on search query
+  const filteredSessions = sessions
+    .filter((session) => session.chatName?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false)
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
 
   return (
     <>
@@ -143,98 +137,74 @@ export const ChatSidebar = forwardRef<
           {/* Chat List */}
           <ScrollArea className="flex-1 px-2">
             <div className="p-2">
-              <h2 className="text-sm font-semibold mb-2 px-2">Your Chats</h2>
-              {Object.entries(groupedChats).map(([date, chats]) => (
-                <div key={date} className="mb-4">
-                  <div className="text-xs text-muted-foreground mb-2 px-2">
-                    {date}
-                  </div>
-                  {chats.map((chat) => (
-                    <div key={chat.id} className="group relative flex items-center">
-                      {chat.isEditing ? (
-                        <div className="flex items-center w-full px-2">
-                          <Input
-                            value={editingTitle}
-                            onChange={(e) => setEditingTitle(e.target.value)}
-                            onKeyDown={(e) => handleKeyDown(e, chat)}
-                            onBlur={() => {
-                              setChatHistory(prev =>
-                                prev.map(c =>
-                                  c.id === chat.id ? { ...c, isEditing: false } : c
-                                )
-                              )
-                            }}
-                            className="h-9 border-2"
-                            autoFocus
-                          />
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-9 w-9 ml-1"
-                            onClick={() => handleEditSave(chat)}
-                          >
-                            <Check className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      ) : (
-                        <Button
-                          variant="ghost"
-                          className="w-full justify-start font-normal"
-                          onClick={() => onSelectChat(chat.id)}
-                        >
-                          <MessageSquarePlus className="mr-2 h-4 w-4" />
-                          {chat.title}
-                        </Button>
-                      )}
-                      <div className="absolute right-2 hidden group-hover:flex items-center gap-1">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8"
-                          onClick={() => startEditing(chat)}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8"
-                          onClick={() => handleDelete(chat.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
+              {isLoading ? (
+                <div className="text-center py-4 text-muted-foreground">
+                  Loading sessions...
+                </div>
+              ) : error ? (
+                <div className="text-center py-4 text-red-500">
+                  {error}
+                </div>
+              ) : filteredSessions.length === 0 ? (
+                <div className="text-center py-4 text-muted-foreground">
+                  No chat sessions found
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {filteredSessions.map((session) => (
+                    <div key={session.sessionId} className="group relative flex items-center">
+                      <Button
+                        variant="ghost"
+                        className="w-full justify-start font-normal"
+                        onClick={() => onSelectChat(session.sessionId, session.chatName)}
+                      >
+                        <MessageSquarePlus className="mr-2 h-4 w-4" />
+                        {session.chatName}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="absolute right-2 hidden h-8 w-8 group-hover:flex"
+                        onClick={() => handleDeleteClick(session.sessionId)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
                     </div>
                   ))}
                 </div>
-              ))}
+              )}
             </div>
           </ScrollArea>
 
-          {/* Settings and Administration */}
-          <div className="p-4 space-y-2">
-            <div className="h-px bg-border mb-4" />
-            <Button
-              variant="ghost"
-              className="w-full justify-start text-sm font-normal"
-              onClick={() => {}}
-            >
-              <Settings className="mr-2 h-4 w-4" />
-              Settings
-            </Button>
-            <Button
-              variant="ghost"
-              className="w-full justify-start text-sm font-normal"
-              onClick={() => router.push('/admin')}
-            >
-              <Shield className="mr-2 h-4 w-4" />
-              Administration
-            </Button>
+          {/* Footer with Settings and Administration */}
+          <div className="p-4 border-t border-border mt-auto">
+            <div className="space-y-2">
+              <Button
+                variant="ghost"
+                className="w-full justify-start"
+                onClick={() => router.push('/settings')}
+              >
+                <Settings className="mr-2 h-4 w-4" />
+                Settings
+              </Button>
+              <Button
+                variant="ghost"
+                className="w-full justify-start"
+                onClick={() => router.push('/admin')}
+              >
+                <Shield className="mr-2 h-4 w-4" />
+                Administration
+              </Button>
+            </div>
           </div>
         </div>
       </div>
+
+      <DeleteSessionDialog
+        open={showDeleteDialog}
+        onOpenChange={setShowDeleteDialog}
+        onSubmit={handleDeleteSubmit}
+      />
     </>
   )
-})
-
-ChatSidebar.displayName = 'ChatSidebar' 
+}

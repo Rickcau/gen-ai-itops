@@ -6,32 +6,33 @@ interface MessageBubbleProps {
 }
 
 export function MessageBubble({ content, role }: MessageBubbleProps) {
-  const bubbleStyle = role === 'user' 
-    ? "ml-auto mr-1 bg-primary text-primary-foreground"
-    : role === 'assistant'
-    ? "mr-auto ml-1 bg-secondary text-secondary-foreground"
-    : role === 'weather'
-    ? "mr-auto ml-1 bg-amber-100 text-amber-900"
-    : "mr-auto ml-1 bg-accent text-accent-foreground"
+  const bubbleClass = {
+    user: 'bg-blue-100 text-blue-900 ml-auto',
+    assistant: 'bg-green-500 text-white',
+    specialist: 'bg-purple-500 text-white',
+    weather: 'bg-sky-500 text-white'
+  }[role]
+
+  const titleClass = {
+    user: 'text-blue-700',
+    assistant: 'text-green-100',
+    specialist: 'text-purple-100',
+    weather: 'text-sky-100'
+  }[role]
+
+  const title = {
+    user: 'You',
+    assistant: 'Assistant',
+    specialist: 'IT Specialist',
+    weather: 'Weather'
+  }[role]
 
   return (
-    <div
-      className={cn(
-        "flex flex-col rounded-lg p-4 mb-2 max-w-[80%]",
-        bubbleStyle
-      )}
-    >
+    <div className={`rounded-lg p-4 max-w-[80%] space-y-1 ${bubbleClass}`}>
       {role !== 'user' && (
-        <div className="font-semibold mb-2">
-          {role === 'assistant' 
-            ? 'Assistant' 
-            : role === 'weather'
-            ? 'Weather Agent'
-            : 'IT Specialist'}
-        </div>
+        <div className={`text-sm font-medium ${titleClass}`}>{title}</div>
       )}
       <div className="whitespace-pre-wrap">{content}</div>
     </div>
   )
 }
-
