@@ -1,5 +1,3 @@
-import { cn } from "@/lib/utils"
-
 interface MessageBubbleProps {
   content: string
   role: 'user' | 'assistant' | 'specialist' | 'weather'

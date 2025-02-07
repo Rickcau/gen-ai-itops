@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { nanoid } from 'nanoid'
 import { Eraser, Send, Trash2 } from 'lucide-react'
 import { Button } from "@/components/ui/button"
@@ -50,7 +50,7 @@ export default function ChatInterface() {
   const [showEndpointWarning, setShowEndpointWarning] = useState(false)
 
   // Load messages for the current session
-  const loadMessages = async (sid: string) => {
+  const loadMessages = useCallback(async (sid: string) => {
     if (!sid || !authState.user) return;
     
     try {
@@ -62,7 +62,7 @@ export default function ChatInterface() {
       const messages = await response.json()
       setChatState(prev => ({
         ...prev,
-        messages: messages.map((msg: any) => ({
+        messages: messages.map((msg: { id: string; prompt: string; sender: string }) => ({
           id: msg.id,
           content: msg.prompt,
           role: msg.sender.toLowerCase() as MessageRole
@@ -71,14 +71,14 @@ export default function ChatInterface() {
     } catch (error) {
       console.error('Error loading messages:', error)
     }
-  }
+  }, [authState.user]) // Only depends on authState.user
 
   // Load messages when sessionId changes
   useEffect(() => {
     if (sessionId) {
       loadMessages(sessionId)
     }
-  }, [sessionId])
+  }, [sessionId, loadMessages])
 
   const handleAction = async (prompt: string) => {
     if (!authState.user) return
@@ -192,8 +192,9 @@ export default function ChatInterface() {
 
   const handleSend = async () => {
     if (!input.trim() || !authState.user) return
-    await handleAction(input)
-    setInput('')
+    const currentInput = input
+    setInput('') // Clear input immediately
+    await handleAction(currentInput)
   }
 
   const handleClear = () => {
@@ -259,7 +260,7 @@ export default function ChatInterface() {
         }
         
         // Map the API response messages to our Message type
-        const messages = data.map((msg: any) => {
+        const messages = data.map((msg: { id: string; prompt: string; sender: string }) => {
           console.log('Processing message:', {
             id: msg.id,
             content: msg.prompt || '',
@@ -267,8 +268,8 @@ export default function ChatInterface() {
           })
           return {
             id: msg.id,
-            content: msg.prompt || '',  // Ensure we have a fallback for empty content
-            role: (msg.sender || 'user').toLowerCase() as MessageRole  // Ensure we have a fallback role
+            content: msg.prompt || '',
+            role: (msg.sender || 'user').toLowerCase() as MessageRole
           }
         })
         
@@ -374,7 +375,7 @@ export default function ChatInterface() {
                 )}
               </div>
 
-              <div className="mt-auto space-y-4 px-6 py-4 border-t border-border">
+              <div className="mt-auto space-y-4 px-6 py-4">
                 <ActionButtons onAction={handleAction} />
 
                 <div className="relative">

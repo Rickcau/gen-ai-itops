@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -12,12 +12,11 @@ import { useChatSessions } from '@/src/hooks/useChatSessions'
 import { DeleteSessionDialog } from './delete-session-dialog'
 
 interface ChatSidebarProps {
-  onNewChat: () => void
   onSelectChat: (sessionId: string, chatName: string) => void
   userId: string
 }
 
-export function ChatSidebar({ onNewChat, onSelectChat, userId }: ChatSidebarProps) {
+export function ChatSidebar({ onSelectChat, userId }: ChatSidebarProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const router = useRouter()
