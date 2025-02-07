@@ -13,10 +13,11 @@ import { DeleteSessionDialog } from './delete-session-dialog'
 
 interface ChatSidebarProps {
   onSelectChat: (sessionId: string, chatName: string) => void
+  onNewChat: () => void
   userId: string
 }
 
-export function ChatSidebar({ onSelectChat, userId }: ChatSidebarProps) {
+export function ChatSidebar({ onSelectChat, onNewChat, userId }: ChatSidebarProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const router = useRouter()
@@ -40,6 +41,7 @@ export function ChatSidebar({ onSelectChat, userId }: ChatSidebarProps) {
     }
     addSession(newSession)
     onSelectChat(newSession.sessionId, newSession.chatName)
+    onNewChat()
   }
 
   const handleDeleteClick = (sessionId: string) => {

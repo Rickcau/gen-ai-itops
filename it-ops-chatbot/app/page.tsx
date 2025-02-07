@@ -4,8 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { nanoid } from 'nanoid'
 import { Eraser, Send, Trash2 } from 'lucide-react'
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { ScrollArea } from '@/components/ui/scroll-area'
+import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Textarea } from '@/components/ui/textarea'
 import { MessageBubble } from '@/components/message-bubble'
 import { ActionButtons } from '@/components/action-buttons'
@@ -32,11 +31,7 @@ interface Message {
 export default function ChatInterface() {
   const { authState } = useAuth();
   const { 
-    sessions,
-    isLoading: isLoadingSessions,
-    error: sessionsError,
-    addSession,
-    removeSession
+    addSession
   } = useChatSessions(authState.user?.email || '')
   const [chatState, setChatState] = useState<ChatState>({
     messages: [],
