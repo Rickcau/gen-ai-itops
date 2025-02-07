@@ -5,6 +5,10 @@ export const config = {
   apiConfigured: true // Controls mock mode
 } as const
 
+export const getApiBaseUrl = () => {
+  return process.env.API_BASE_URL || 'https://localhost:7049'
+}
+
 export const getCurrentUser = async () => {
   try {
     // If running locally, use az CLI through our API route
