@@ -195,7 +195,6 @@ builder.Services.AddSwaggerGen(c =>
         Name = "api-key",
         Type = SecuritySchemeType.ApiKey
     });
-
     c.AddSecurityRequirement(new OpenApiSecurityRequirement
         {
             {

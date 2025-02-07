@@ -34,6 +34,7 @@ namespace api_gen_ai_itops.Interfaces
         Task<Session> GetSessionAsync(string sessionId);
         Task UpsertSessionBatchAsync(params dynamic[] messages);
         Task DeleteSessionAndMessagesAsync(string sessionId);
+        Task DeleteAllSessionsAndMessagesAsync();
 
     }
 }

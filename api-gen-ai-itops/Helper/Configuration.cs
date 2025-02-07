@@ -11,6 +11,9 @@ namespace Helper.AzureOpenAISearchConfiguration
         
         public CosmosDbOptions CosmosDb { get; set; } = new ();
 
+        [ConfigurationKeyName("SecuritySettings:SystemWipeKey")]
+        public string? SystemWipeKey { get; set; }
+
         // "AZURE_MANAGED_IDENTITY"
         [ConfigurationKeyName("AZURE_MANAGED_IDENTITY")]
         public string? AzureManagedIdentity { get; set; }

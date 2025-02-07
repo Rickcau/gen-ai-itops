@@ -485,6 +485,74 @@ namespace api_gen_ai_itops.Services
             }
             await batch.ExecuteAsync();
         }
+
+        /// <summary>
+        /// Deletes all sessions and their associated messages from the chat history container.
+        /// This operation performs a bulk delete using transactional batches grouped by session partitions.
+        /// </summary>
+        /// <remarks>
+        /// The deletion process:
+        /// 1. Queries all items of type 'session' and 'message'
+        /// 2. Groups items by their partition key (sessionId)
+        /// 3. Executes transactional batch deletions for each partition
+        /// </remarks>
+        /// <returns>
+        /// A task that represents the asynchronous delete operation.
+        /// </returns>
+        /// <exception cref="CosmosException">
+        /// Thrown when there's an issue with the Cosmos DB operation:
+        /// - Status 429: Rate limiting/request throttling
+        /// - Status 503: Service unavailable
+        /// </exception>
+        /// <exception cref="Exception">
+        /// Thrown when an unexpected error occurs during the deletion process.
+        /// </exception>
+
+        public async Task DeleteAllSessionsAndMessagesAsync()
+        {
+            // Query to get all items (both sessions and messages)
+            QueryDefinition query = new QueryDefinition("SELECT * FROM c WHERE c.type IN ('session', 'message')");
+
+            // Get all items that need to be deleted
+            FeedIterator<dynamic> response = _chatHistoryContainer.GetItemQueryIterator<dynamic>(query);
+
+            // Create a dictionary to group items by partition key (sessionId)
+            var itemsByPartition = new Dictionary<string, List<(string id, string sessionId)>>();
+
+            // Collect all items grouped by their partition key
+            while (response.HasMoreResults)
+            {
+                FeedResponse<dynamic> results = await response.ReadNextAsync();
+                foreach (var item in results)
+                {
+                    string sessionId = item.sessionId.ToString();
+                    string id = item.id.ToString();
+
+                    if (!itemsByPartition.ContainsKey(sessionId))
+                    {
+                        itemsByPartition[sessionId] = new List<(string, string)>();
+                    }
+                    itemsByPartition[sessionId].Add((id, sessionId));
+                }
+            }
+
+            // Delete all items in batches, partition by partition
+            foreach (var partition in itemsByPartition)
+            {
+                string sessionId = partition.Key;
+                var items = partition.Value;
+
+                TransactionalBatch batch = _chatHistoryContainer.CreateTransactionalBatch(new PartitionKey(sessionId));
+
+                foreach (var (id, _) in items)
+                {
+                    batch.DeleteItem(id);
+                }
+
+                await batch.ExecuteAsync();
+            }
+        }
+
     }
 
 }

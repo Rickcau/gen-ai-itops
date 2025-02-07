@@ -22,6 +22,8 @@ export async function GET(
     console.log('Fetching messages from:', apiUrl)
 
     const response = await fetch(apiUrl, {
+      method: 'GET',
+      cache: 'no-store',  // Disable caching
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
@@ -44,14 +46,30 @@ export async function GET(
       )
     }
 
-    const data = await response.json()
-    console.log('Received messages from backend:', {
-      count: Array.isArray(data) ? data.length : 0,
-      messages: data
+    // Get the raw text first to verify what we're receiving
+    const rawText = await response.text()
+    console.log('Raw response text:', rawText)
+
+    // Parse the text into JSON
+    const data = JSON.parse(rawText)
+    console.log('Parsed response data:', {
+      isArray: Array.isArray(data),
+      length: Array.isArray(data) ? data.length : 0,
+      data: data
     })
 
-    // Ensure we're returning the full array of messages
-    return NextResponse.json(data)
+    if (!Array.isArray(data)) {
+      console.error('Expected array but got:', typeof data)
+      throw new Error('Invalid response format from backend')
+    }
+
+    // Return the data directly without any transformation
+    return new NextResponse(rawText, {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    })
   } catch (error) {
     console.error('Error in messages API route:', {
       name: error instanceof Error ? error.name : 'Unknown',

@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.Cosmos;
 using System.Net.Mime;
 using Swashbuckle.AspNetCore.Annotations;
+using Helper.AzureOpenAISearchConfiguration;
 
 namespace api_gen_ai_itops.Controllers
 {
@@ -13,13 +14,16 @@ namespace api_gen_ai_itops.Controllers
     {
         private readonly ILogger<SessionsController> _logger;
         private readonly ICosmosDbService _cosmosDbService;
+        private readonly Configuration _configuration;
 
         public SessionsController(
             ILogger<SessionsController> logger,
-            ICosmosDbService cosmosDbService)
+            ICosmosDbService cosmosDbService,
+            Configuration configuration)
         {
             _logger = logger;
             _cosmosDbService = cosmosDbService;
+            _configuration = configuration;
         }
 
 
@@ -230,6 +234,63 @@ namespace api_gen_ai_itops.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error deleting session: {SessionId}", sessionId);
+                return StatusCode(500, "Internal server error");
+            }
+        }
+
+        /// <summary>
+        /// Deletes all sessions and messages from the system.
+        /// This is a protected operation that requires a valid system wipe key.
+        /// </summary>
+        /// <param name="systemWipeKey">The security key required to authorize the system wipe operation</param>
+        /// <remarks>
+        /// This operation will permanently delete all chat sessions and their associated messages.
+        /// It requires a valid system wipe key passed in the X-System-Wipe-Key header.
+        /// </remarks>
+        /// <returns>
+        /// - 204 NoContent: If the deletion was successful
+        /// - 401 Unauthorized: If the system wipe key is invalid
+        /// - 500 InternalServerError: If there's an error during the operation
+        /// </returns>
+        /// <response code="204">All sessions and messages successfully deleted</response>
+        /// <response code="401">Invalid or missing system wipe key</response>
+        /// <response code="500">Internal server error occurred during the operation</response>
+        [SwaggerOperation(
+            Summary = "Delete all sessions and messages",
+            Description = "Deletes all sessions and their associated messages from the system. Requires system wipe authorization key."
+        )]
+        [HttpDelete("system-wipe")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<IActionResult> DeleteAllSessions([FromHeader(Name = "X-System-Wipe-Key")] string systemWipeKey)
+        {
+            try
+            {
+                var configuredKey = _configuration.SystemWipeKey;
+
+                if (string.IsNullOrEmpty(configuredKey))
+                {
+                    _logger.LogError("System wipe key not configured");
+                    return StatusCode(500, "System wipe functionality not properly configured");
+                }
+
+                if (!configuredKey.Equals(systemWipeKey, StringComparison.Ordinal))
+                {
+                    _logger.LogWarning("Unauthorized system wipe attempt with incorrect key");
+                    return Unauthorized("Invalid system wipe key");
+                }
+
+                _logger.LogWarning("Authorized system wipe initiated - deleting all sessions and messages");
+
+                await _cosmosDbService.DeleteAllSessionsAndMessagesAsync();
+
+                _logger.LogWarning("System wipe completed successfully");
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error during system wipe operation");
                 return StatusCode(500, "Internal server error");
             }
         }

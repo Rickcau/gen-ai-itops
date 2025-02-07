@@ -339,6 +339,38 @@ namespace AzureOpenAISearchHelper
             return runbookDetailsList;
         }
 
+        // Document stuff
+
+        public async Task<List<SearchDocument>> ListDocumentsAsync(string indexName, SearchClient searchClient, int maxResults = 1000)
+        {
+            try
+            {
+                Console.WriteLine("Retrieving documents from index: {IndexName}", indexName);
+
+                var searchOptions = new SearchOptions
+                {
+                    Size = maxResults,
+                    IncludeTotalCount = true
+                };
+
+                var response = await searchClient.SearchAsync<SearchDocument>("*", searchOptions);
+                var documents = new List<SearchDocument>();
+
+                foreach (var result in response.Value.GetResults())
+                {
+                    documents.Add(result.Document);
+                }
+
+                Console.WriteLine($"Retrieved {documents.Count} documents from index {indexName}");
+                return documents;
+            }
+            catch (RequestFailedException ex)
+            {
+                Console.WriteLine($"Error retrieving documents: {ex.Message}");
+                throw;
+            }
+        }
+
 
     }
 }
