@@ -12,4 +12,7 @@ export interface ChatApiResponse {
   weatherResponse?: string;
   sessionId?: string;
   chatName?: string;
+  runbookName?: string;
+  jobId?: string;
+  runbookStatus?: 'running' | 'completed' | 'failed';
 }

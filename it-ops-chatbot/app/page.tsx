@@ -19,6 +19,7 @@ import type { ChatState } from '@/types/chat'
 import type { ChatApiRequest, ChatApiResponse } from '@/types/api'
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
+import { RunbookSidebar } from '@/components/runbook-sidebar'
 
 type MessageRole = 'user' | 'assistant' | 'specialist' | 'weather'
 
@@ -43,6 +44,12 @@ export default function ChatInterface() {
   const [currentChatName, setCurrentChatName] = useState('')
   const [showClearDialog, setShowClearDialog] = useState(false)
   const [showEndpointWarning, setShowEndpointWarning] = useState(false)
+  const [runbookExecutions, setRunbookExecutions] = useState<Array<{
+    jobId: string
+    runbookName: string
+    status: 'running' | 'completed' | 'failed'
+    timestamp: string
+  }>>([])
 
   // Load messages for the current session
   const loadMessages = useCallback(async (sid: string) => {
@@ -146,11 +153,43 @@ export default function ChatInterface() {
       }
 
       if (data.specialistResponse) {
+        console.log('Specialist Response:', data.specialistResponse);
+        
+        // Try all possible patterns
+        const patterns = [
+          // Pattern 1: List VMs format
+          /The runbook "(.*?)" has been started\. You can track its progress with Job ID: `(.*?)`/,
+          // Pattern 2: Successfully executed format
+          /runbook "(.*?)" has been successfully executed.*Job ID: `(.*?)`/,
+          // Pattern 3: Shutdown VM format
+          /The runbook "(.*?)" has been started with parameters.*Job ID: `(.*?)`/,
+          // Pattern 4: Generic format (fallback)
+          /runbook "([^"]+)".*Job ID: `([^`]+)`/
+        ];
+
+        let matched = false;
+        for (const pattern of patterns) {
+          const match = data.specialistResponse.match(pattern);
+          console.log(`Trying pattern ${pattern}:`, match);
+          
+          if (match) {
+            const [_, runbookName, jobId] = match;
+            console.log('Extracted Runbook Info:', { runbookName, jobId });
+            handleRunbookExecution(runbookName, jobId);
+            matched = true;
+            break;
+          }
+        }
+
+        if (!matched) {
+          console.log('No patterns matched the specialist response');
+        }
+
         newMessages.push({
           id: nanoid(),
           content: data.specialistResponse,
           role: 'specialist'
-        })
+        });
       }
 
       if (data.weatherResponse) {
@@ -167,6 +206,11 @@ export default function ChatInterface() {
         messages: [...prev.messages, ...newMessages],
         isLoading: false
       }))
+
+      // Add this to your existing handleAction function where runbooks are executed
+      if (data.runbookName && data.jobId) {
+        handleRunbookExecution(data.runbookName, data.jobId)
+      }
     } catch (error) {
       console.error('Error:', error)
       if (mockMode) {
@@ -183,6 +227,28 @@ export default function ChatInterface() {
         }))
       }
     }
+  }
+
+  const handleRunbookExecution = (runbookName: string, jobId: string) => {
+    setRunbookExecutions(prev => [
+      ...prev,
+      {
+        jobId,
+        runbookName,
+        status: 'running',
+        timestamp: new Date().toISOString()
+      }
+    ])
+  }
+
+  const updateRunbookStatus = (jobId: string, status: 'completed' | 'failed') => {
+    setRunbookExecutions(prev =>
+      prev.map(execution =>
+        execution.jobId === jobId
+          ? { ...execution, status }
+          : execution
+      )
+    )
   }
 
   const handleSend = async () => {
@@ -211,6 +277,9 @@ export default function ChatInterface() {
       isLoading: false
     })
     setInput('') // Clear input
+    
+    // Clear runbook executions for the new session
+    setRunbookExecutions([])
     
     // Create new session
     const newSessionId = nanoid()
@@ -299,6 +368,11 @@ export default function ChatInterface() {
     }
   }
 
+  const handleRunbookExecutionClick = (runbookName: string, jobId: string) => {
+    const statusCheckMessage = `Check the status of runbook "${runbookName}" with Job ID: ${jobId}`
+    handleAction(statusCheckMessage)
+  }
+
   return (
     <div className="flex h-screen w-full overflow-hidden">
       {authState.user && (
@@ -308,12 +382,12 @@ export default function ChatInterface() {
           userId={authState.user.email || ''}
         />
       )}
-      <div className="container mx-auto max-w-4xl p-4 flex flex-col h-full">
+      <div className="container mx-auto max-w-5xl p-4 flex flex-col h-full">
         <Card className="flex-1 flex flex-col overflow-hidden">
           <CardHeader className="flex flex-row justify-between items-center pb-4">
-            <div className="space-y-2">
+            <div className="flex items-center gap-4">
               <h1 className="text-2xl font-bold tracking-tight">Multi-Agent IT Operations Platform</h1>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 ml-4">
                 <Switch
                   id="mock-mode"
                   checked={mockMode}
@@ -421,6 +495,13 @@ export default function ChatInterface() {
           onOpenChange={setShowEndpointWarning}
         />
       </div>
+      {sessionId && (
+        <RunbookSidebar
+          sessionId={sessionId}
+          executions={runbookExecutions}
+          onExecutionClick={handleRunbookExecutionClick}
+        />
+      )}
     </div>
   )
 }

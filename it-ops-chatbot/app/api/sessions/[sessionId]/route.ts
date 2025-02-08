@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
-import { getApiBaseUrl } from '@/lib/config'
+
+const API_BASE_URL = process.env.API_BASE_URL || 'https://localhost:7049'
 
 export async function DELETE(
   request: NextRequest,
@@ -8,12 +9,12 @@ export async function DELETE(
 ) {
   try {
     const { sessionId } = params
-    const apiBaseUrl = getApiBaseUrl()
     
-    const response = await fetch(`${apiBaseUrl}/sessions/${sessionId}`, {
+    const response = await fetch(`${API_BASE_URL}/sessions/${sessionId}`, {
       method: 'DELETE',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'api-key': process.env.API_KEY || ''
       }
     })
 

@@ -2,7 +2,6 @@
 
 import { createContext, useContext, useEffect, useState } from 'react';
 import { AuthContextType, AuthState } from '@/types/auth';
-import { getCurrentUser } from '@/lib/config';
 
 const initialState: AuthState = {
   user: null,
@@ -15,6 +14,14 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [authState, setAuthState] = useState<AuthState>(initialState);
+
+  const getCurrentUser = async () => {
+    const response = await fetch('/api/user');
+    if (!response.ok) {
+      throw new Error('Please login using az login first');
+    }
+    return await response.json();
+  };
 
   useEffect(() => {
     const authenticate = async () => {

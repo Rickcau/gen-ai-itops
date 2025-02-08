@@ -58,17 +58,22 @@ export function ChatSidebar({ onSelectChat, onNewChat, userId }: ChatSidebarProp
             method: 'DELETE'
           })
           
-          if (!response.ok) {
+          // If response is not ok but it's a 404, we should still remove from local storage
+          // as this indicates the session no longer exists in CosmosDB
+          if (!response.ok && response.status !== 404) {
             console.error('Error deleting session:', response.statusText)
-            return // Don't remove from local if server delete failed
+            return // Only return if it's a real error, not a 404
           }
         } catch (err) {
           console.error('Error deleting session:', err)
-          return // Don't remove from local if server delete failed
+          return // Don't remove from local if server request failed
         }
       }
       
-      // Only remove from local list/cache if server delete succeeded or wasn't requested
+      // Remove from local list/cache if:
+      // 1. Server delete succeeded OR
+      // 2. Server returned 404 (session doesn't exist) OR
+      // 3. User didn't request server deletion
       removeSession(sessionToDelete)
     }
     setSessionToDelete(null)
