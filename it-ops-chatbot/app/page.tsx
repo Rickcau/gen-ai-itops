@@ -173,7 +173,7 @@ export default function ChatInterface() {
           console.log(`Trying pattern ${pattern}:`, match);
           
           if (match) {
-            const [_, runbookName, jobId] = match;
+            const [, runbookName, jobId] = match;
             console.log('Extracted Runbook Info:', { runbookName, jobId });
             handleRunbookExecution(runbookName, jobId);
             matched = true;
@@ -239,16 +239,6 @@ export default function ChatInterface() {
         timestamp: new Date().toISOString()
       }
     ])
-  }
-
-  const updateRunbookStatus = (jobId: string, status: 'completed' | 'failed') => {
-    setRunbookExecutions(prev =>
-      prev.map(execution =>
-        execution.jobId === jobId
-          ? { ...execution, status }
-          : execution
-      )
-    )
   }
 
   const handleSend = async () => {

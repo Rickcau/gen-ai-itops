@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Search, PlayCircle, AlertCircle } from 'lucide-react'
 
