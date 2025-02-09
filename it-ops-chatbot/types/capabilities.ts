@@ -1,15 +1,20 @@
-export interface Capability {
-  id: string;
-  name: string;
-  description: string;
-  tags: string[];
-  parameters: Parameter[];
+export interface ExecutionMethod {
+  type: string
+  details: string
 }
 
 export interface Parameter {
-  name: string;
-  type: 'string' | 'number' | 'boolean';
-  description: string;
-  required: boolean;
-  defaultValue?: string | number | boolean;
+  name: string
+  type: string
+  description: string
+}
+
+export interface Capability {
+  id: string
+  capabilityType: string
+  name: string
+  description: string
+  tags: string[]
+  parameters: Parameter[]
+  executionMethod: ExecutionMethod
 } 
