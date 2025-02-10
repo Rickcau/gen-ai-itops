@@ -3,6 +3,15 @@
 
 [![Next.js CI](https://github.com/Rickcau/gen-ai-itops/actions/workflows/nextjs-ci.yml/badge.svg)](https://github.com/Rickcau/gen-ai-itops/actions/workflows/nextjs-ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+## Licensing 
+This project uses a dual license model:
+
+- **Commercial License**: Required for Azure-hosted production deployments
+- **MIT License**: Applies to open source use cases
+
+See [LICENSE.md](LICENSE.md) for details.
+
 ## Overview
 This repository contains a comprehensive solution for automating IT operations using Generative AI, Azure Automation, GitHub Workflows, and modern web technologies. The platform enables users to interact with IT infrastructure through a natural language interface while maintaining proper security controls and role-based access.
 
@@ -70,5 +79,3 @@ This repository contains a comprehensive solution for automating IT operations u
 - More work is needed for the GitHub integration as the platform does not provide the robust capabilities that Azure Automation has
 - Determining how to lock down access to varioaus GitHub actions would be needed.
 
-## License
-This project is licensed under the MIT License - see the LICENSE file for details. 
