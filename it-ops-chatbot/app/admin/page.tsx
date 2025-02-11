@@ -29,7 +29,6 @@ import { SystemWipeDialog } from '@/components/system-wipe-dialog'
 import { ViewCapabilityDialog } from '@/components/view-capability-dialog'
 import type { Session, SessionMessage, SessionUpdate } from '@/types/session'
 import type { SearchResult, SearchParams } from '@/types/search'
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { TestDialog } from "@/components/test-dialog"
 
 interface CollapsibleCardProps {

@@ -30,7 +30,7 @@ export function SystemWipeDialog({
         <div className="pt-4">
           <p className="text-muted-foreground">
             This action will permanently delete all data from the system. This includes all users, sessions, capabilities, and indexes.
-            To confirm, please type "WIPE" in the input field below.
+            To confirm, please type &quot;WIPE&quot; in the input field below.
           </p>
         </div>
 
