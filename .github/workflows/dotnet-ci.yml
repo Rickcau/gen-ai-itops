@@ -3,14 +3,14 @@ name: .NET CI
 on:
   workflow_dispatch:
   push:
-    branches: '*'  # Changed from main to master
+    branches: '**'  # Changed from main to master
     paths:
       - 'api-gen-ai-itops/**'
       - 'api-gen-ai-itops/*'
       - 'ConsoleApp-*/**'
       - 'ConsoleApp-*/*'
   pull_request:
-    branches: '*'  # Changed from main to master
+    branches: '**'  # Changed from main to master
     paths:
       - 'api-gen-ai-itops/**'
       - 'api-gen-ai-itops/*'
