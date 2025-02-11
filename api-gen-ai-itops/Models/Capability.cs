@@ -34,6 +34,9 @@ namespace api_gen_ai_itops.Models
 
         [JsonPropertyName("type")]
         public string Type { get; set; }
+
+        [JsonPropertyName("description")]
+        public string Description { get; set; }
     }
 
     public class ExecutionMethod

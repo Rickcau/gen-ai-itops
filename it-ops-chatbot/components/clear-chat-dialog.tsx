@@ -14,16 +14,22 @@ interface ClearChatDialogProps {
   onConfirm: () => void;
 }
 
-export function ClearChatDialog({ open, onOpenChange, onConfirm }: ClearChatDialogProps) {
+export function ClearChatDialog({
+  open,
+  onOpenChange,
+  onConfirm,
+}: ClearChatDialogProps) {
+  const descriptionId = "clear-chat-dialog-description"
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent aria-describedby={descriptionId}>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-amber-500">
             <AlertCircle className="h-5 w-5" />
             Clear Chat History?
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription id={descriptionId}>
             Are you sure you want to clear all messages from this chat?
             This action cannot be undone.
           </DialogDescription>

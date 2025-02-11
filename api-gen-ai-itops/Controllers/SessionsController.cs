@@ -26,25 +26,22 @@ namespace api_gen_ai_itops.Controllers
             _configuration = configuration;
         }
 
-
         [SwaggerOperation(
-            Summary = "Get all sessions for userId",
-            Description = "Returns all the sessions for a userId."
+           Summary = "Get all Chat sessions",
+           Description = "Returns all the chat sessions in the DB."
         )]
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<ActionResult<List<Session>>> GetAllSessions([FromQuery] string? userId = null)
+        public async Task<ActionResult<List<Session>>> GetAllSessions()
         {
             try
             {
-                _logger.LogDebug("Retrieving chat sessions" + (!string.IsNullOrEmpty(userId) ? $" for user: {userId}" : ""));
-                string? query = null;
-                if (!string.IsNullOrEmpty(userId))
-                {
-                    query = "SELECT * FROM c WHERE c.type = 'session' AND c.userId = @userId";
-                }
-                var sessions = await _cosmosDbService.GetSessionsAsync(query,userId);
+                _logger.LogDebug("Retrieving all sessions..");
+                // string? query = null;
+
+                // query = "SELECT * FROM c WHERE c.type = 'session'";
+                var sessions = await _cosmosDbService.GetSessionsAsync();
                 return Ok(sessions);
             }
             catch (Exception ex)
@@ -83,6 +80,33 @@ namespace api_gen_ai_itops.Controllers
             }
         }
 
+
+        [SwaggerOperation(
+            Summary = "Get all sessions for userId",
+            Description = "Returns all the sessions for a userId."
+        )]
+        [HttpGet("user/{userId}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<ActionResult<List<Session>>> GetAllSessionsForUser(string? userId)
+        {
+            try
+            {
+                _logger.LogDebug("Retrieving chat sessions" + (!string.IsNullOrEmpty(userId) ? $" for user: {userId}" : ""));
+                string? query = null;
+                if (!string.IsNullOrEmpty(userId))
+                {
+                    query = "SELECT * FROM c WHERE c.type = 'session' AND c.userId = @userId";
+                }
+                var sessions = await _cosmosDbService.GetSessionsAsync(query, userId);
+                return Ok(sessions);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving chat sessions");
+                return StatusCode(500, "Internal server error");
+            }
+        }
 
         [SwaggerOperation(
             Summary = "Get all messages using sessionId",

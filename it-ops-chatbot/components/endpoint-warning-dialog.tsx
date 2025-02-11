@@ -12,19 +12,22 @@ interface EndpointWarningDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
-export function EndpointWarningDialog({ open, onOpenChange }: EndpointWarningDialogProps) {
+export function EndpointWarningDialog({
+  open,
+  onOpenChange,
+}: EndpointWarningDialogProps) {
+  const descriptionId = "endpoint-warning-dialog-description"
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent aria-describedby={descriptionId}>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-amber-500">
             <AlertCircle className="h-5 w-5" />
-            API Endpoint Not Configured
+            Warning: Missing API Endpoint
           </DialogTitle>
-          <DialogDescription>
-            The REST API endpoint has not been set up yet. The application will automatically
-            switch to Mock Mode to demonstrate functionality. Your request will be processed
-            using mock data.
+          <DialogDescription id={descriptionId}>
+            The API endpoint is not configured. Please check your environment variables and ensure the API is running.
           </DialogDescription>
         </DialogHeader>
       </DialogContent>

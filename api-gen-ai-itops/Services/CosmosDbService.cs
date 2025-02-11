@@ -73,7 +73,7 @@ namespace api_gen_ai_itops.Services
         /// <summary>
         /// This Function is used to query the Capabilities Container for Capabilities by Id
         /// </summary>
-        /// <param name="query"></param>
+        /// <param name="id"></param>
         /// <returns>Returns a specific Capability</returns>
         public async Task<Capability?> GetCapabilityAsync(string id)
         {
@@ -362,8 +362,7 @@ namespace api_gen_ai_itops.Services
         public async Task<List<Session>> GetSessionsAsync(string? query = null, string? userId = null)
         {
             var queryDefinition = string.IsNullOrEmpty(query)
-                ? new QueryDefinition("SELECT DISTINCT * FROM c WHERE c.type = @type")
-                    .WithParameter("@type", nameof(Session))
+                ? new QueryDefinition("SELECT DISTINCT * FROM c WHERE c.type = 'session'")
                 : new QueryDefinition(query)
                     .WithParameter("@userId", userId);
 
