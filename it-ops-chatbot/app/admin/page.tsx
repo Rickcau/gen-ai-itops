@@ -1,11 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ThemeToggle } from '@/components/theme-switcher'
-import { ArrowLeft, Settings, Shield, Zap, User, Plus, Database, ChevronDown, ChevronRight, MessageSquare } from 'lucide-react'
+import { ArrowLeft, Settings, Shield, Zap, User, Plus, Database, ChevronDown, ChevronRight, MessageSquare, Loader2, Pencil } from 'lucide-react'
 import { CapabilityDialog } from '@/components/capability-dialog'
 import { CreateIndexDialog } from '@/components/create-index-dialog'
 import { DeleteIndexDialog } from '@/components/delete-index-dialog'
@@ -16,12 +16,18 @@ import { useToast } from "@/components/ui/use-toast"
 import { ListDocumentsDialog } from "@/components/list-documents-dialog"
 import { GenerateEmbeddingsDialog } from "@/components/generate-embeddings-dialog"
 import { SearchIndexDialog } from "@/components/search-index-dialog"
-import { UpdateCapabilityDialog } from '@/components/update-capability-dialog'
 import { DeleteCapabilityDialog } from '@/components/delete-capability-dialog'
 import { CreateUserDialog } from '@/components/create-user-dialog'
 import { ViewUserDialog } from '@/components/view-user-dialog'
 import { UpdateUserDialog } from '@/components/update-user-dialog'
 import { DeleteUserDialog } from '@/components/delete-user-dialog'
+import { Label } from "@/components/ui/label"
+import { Input } from "@/components/ui/input"
+import { ViewSessionDialog } from '@/components/view-session-dialog'
+import { DeleteSessionDialog } from '@/components/delete-session-dialog'
+import { CreateSessionDialog } from '@/components/create-session-dialog'
+import { SystemWipeDialog } from '@/components/system-wipe-dialog'
+import { ViewCapabilityDialog } from '@/components/view-capability-dialog'
 
 interface CollapsibleCardProps {
   title: string
@@ -64,6 +70,24 @@ function CollapsibleCard({
   )
 }
 
+interface SessionData {
+  sessionId: string;
+  userId: string;
+  name: string;
+  timestamp: string;
+  messages?: Array<{
+    id: string;
+    type: string;
+    sessionId: string;
+    timeStamp: string;
+    prompt: string;
+    sender: string;
+    promptTokens: number;
+    completion: string | null;
+    completionTokens: number;
+  }>;
+}
+
 export default function AdminPage() {
   const router = useRouter()
   const { authState } = useAuth()
@@ -91,8 +115,8 @@ export default function AdminPage() {
   const [selectedIndexForSearch, setSelectedIndexForSearch] = useState<string>('')
   const [isSearching, setIsSearching] = useState(false)
   const [searchResults, setSearchResults] = useState<any[]>([])
-  const [updateDialogOpen, setUpdateDialogOpen] = useState(false)
-  const [selectedCapability, setSelectedCapability] = useState<Capability | undefined>()
+  const [selectedCapability, setSelectedCapability] = useState<Capability | null>(null)
+  const [viewCapabilityDialogOpen, setViewCapabilityDialogOpen] = useState(false)
   const [capabilityToDelete, setCapabilityToDelete] = useState<Capability | null>(null)
   const [isDeletingCapability, setIsDeletingCapability] = useState(false)
   const [sessions, setSessions] = useState<any[]>([])
@@ -104,9 +128,26 @@ export default function AdminPage() {
   const [createUserDialogOpen, setCreateUserDialogOpen] = useState(false)
   const [viewUserDialogOpen, setViewUserDialogOpen] = useState(false)
   const [selectedUserData, setSelectedUserData] = useState<any>(null)
-  const [updateUserDialogOpen, setUpdateUserDialogOpen] = useState(false)
   const [userToDelete, setUserToDelete] = useState<string | null>(null)
   const [isDeletingUser, setIsDeletingUser] = useState(false)
+  const [sessionFilter, setSessionFilter] = useState('')
+  const [userFilter, setUserFilter] = useState('')
+  const [selectedSession, setSelectedSession] = useState<any>(null)
+  const [viewSessionDialogOpen, setViewSessionDialogOpen] = useState(false)
+  const [sessionToDelete, setSessionToDelete] = useState<string | null>(null)
+  const [deleteSessionDialogOpen, setDeleteSessionDialogOpen] = useState(false)
+  const [systemWipeDialogOpen, setSystemWipeDialogOpen] = useState(false)
+  const [isDeletingSession, setIsDeletingSession] = useState(false)
+  const [createSessionDialogOpen, setCreateSessionDialogOpen] = useState(false)
+
+  // Filter sessions based on search criteria
+  const filteredSessions = useMemo(() => {
+    return sessions.filter(session => {
+      const matchesSessionId = session.sessionId.toLowerCase().includes(sessionFilter.toLowerCase())
+      const matchesUserId = session.userId?.toLowerCase().includes(userFilter.toLowerCase()) ?? false
+      return matchesSessionId && matchesUserId
+    })
+  }, [sessions, sessionFilter, userFilter])
 
   const handleAddCapability = async (data: Omit<Capability, 'id'>) => {
     try {
@@ -116,10 +157,7 @@ export default function AdminPage() {
       }
 
       console.log('Frontend: Starting request to add capability:', newCapability)
-      const url = 'https://localhost:7049/capabilities'
-      console.log('Frontend: POST URL:', url)
-      
-      const response = await fetch(url, {
+      const response = await fetch('/api/capabilities', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -176,10 +214,7 @@ export default function AdminPage() {
     setIsDeletingCapability(true)
     try {
       console.log('Frontend: Starting request to delete capability:', id)
-      const url = `https://localhost:7049/capabilities/${encodeURIComponent(id)}`
-      console.log('Frontend: Delete URL:', url)
-      
-      const response = await fetch(url, {
+      const response = await fetch(`/api/capabilities/${encodeURIComponent(id)}`, {
         method: 'DELETE',
         headers: {
           'Accept': 'application/json',
@@ -230,7 +265,7 @@ export default function AdminPage() {
 
   const handleUpdate = (capability: Capability) => {
     setSelectedCapability(capability)
-    setUpdateDialogOpen(true)
+    setViewCapabilityDialogOpen(true)
   }
 
   const handleListIndexes = async () => {
@@ -526,10 +561,7 @@ export default function AdminPage() {
   const handleUpdateCapability = async (updatedCapability: Capability) => {
     try {
       console.log('Frontend: Starting request to update capability:', updatedCapability.id)
-      console.log('Frontend: Update data:', updatedCapability)
-      const url = `/api/capabilities/${encodeURIComponent(updatedCapability.id)}`
-      
-      const response = await fetch(url, {
+      const response = await fetch(`/api/capabilities/${encodeURIComponent(updatedCapability.id)}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -562,7 +594,7 @@ export default function AdminPage() {
       
       // Refresh the capabilities list
       await handleListCapabilities()
-      setUpdateDialogOpen(false)
+      setViewCapabilityDialogOpen(false)
     } catch (error) {
       console.error('Error updating capability:', error)
       toast({
@@ -581,19 +613,27 @@ export default function AdminPage() {
       console.log('Frontend: Starting request to list sessions')
       const response = await fetch('/api/sessions', {
         method: 'GET',
-        cache: 'no-store',
         headers: {
+          'Accept': 'application/json',
           'Cache-Control': 'no-cache',
           'Pragma': 'no-cache'
         }
       })
       
+      console.log('Frontend: Received response:', {
+        ok: response.ok,
+        status: response.status,
+        statusText: response.statusText
+      })
+
       if (!response.ok) {
-        throw new Error(`API request failed: ${response.statusText}`)
+        const errorData = await response.text()
+        console.error('Frontend: List sessions failed with error:', errorData)
+        throw new Error(errorData || 'Failed to list sessions')
       }
       
       const data = await response.json()
-      console.log('Parsed sessions data:', data)
+      console.log('Frontend: Sessions data retrieved:', data)
       setSessions(data)
     } catch (error) {
       console.error('Error listing sessions:', error)
@@ -614,7 +654,7 @@ export default function AdminPage() {
     
     try {
       console.log('Frontend: Starting request to list users')
-      const response = await fetch('https://localhost:7049/users', {
+      const response = await fetch('/api/users', {
         method: 'GET',
         headers: {
           'Accept': 'application/json',
@@ -646,7 +686,7 @@ export default function AdminPage() {
   const handleCreateUser = async (userData: any) => {
     try {
       console.log('Frontend: Starting request to create user:', userData)
-      const response = await fetch('https://localhost:7049/users', {
+      const response = await fetch('/api/users', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -687,7 +727,7 @@ export default function AdminPage() {
   const handleViewUser = async (email: string) => {
     try {
       console.log('Frontend: Starting request to view user:', email)
-      const response = await fetch(`https://localhost:7049/users/${encodeURIComponent(email)}`, {
+      const response = await fetch(`/api/users/${encodeURIComponent(email)}`, {
         method: 'GET',
         headers: {
           'Accept': 'application/json',
@@ -717,7 +757,7 @@ export default function AdminPage() {
   const handleUpdateUser = async (userData: any) => {
     try {
       console.log('Frontend: Starting request to update user:', userData)
-      const response = await fetch(`https://localhost:7049/users/${encodeURIComponent(userData.userInfo.email)}`, {
+      const response = await fetch(`/api/users/${encodeURIComponent(userData.userInfo.email)}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -741,7 +781,7 @@ export default function AdminPage() {
 
       // Refresh the users list and close the dialog
       await handleListUsers()
-      setUpdateUserDialogOpen(false)
+      setViewUserDialogOpen(false)
     } catch (error) {
       console.error('Error updating user:', error)
       toast({
@@ -756,7 +796,7 @@ export default function AdminPage() {
     setIsDeletingUser(true)
     try {
       console.log('Frontend: Starting request to delete user:', email)
-      const response = await fetch(`https://localhost:7049/users/${encodeURIComponent(email)}/history`, {
+      const response = await fetch(`/api/users/${encodeURIComponent(email)}/history`, {
         method: 'DELETE',
         headers: {
           'Accept': 'application/json',
@@ -786,6 +826,247 @@ export default function AdminPage() {
     } finally {
       setIsDeletingUser(false)
       setUserToDelete(null)
+    }
+  }
+
+  const abbreviateId = (id: string, maxLength: number = 8) => {
+    if (id.length <= maxLength) return id;
+    return `${id.slice(0, maxLength)}...`;
+  }
+
+  const handleCreateSession = async (data: { userId: string; name: string }) => {
+    try {
+      console.log('Frontend: Starting request to create session:', data)
+      const response = await fetch('/api/sessions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        },
+        body: JSON.stringify({
+          userId: data.userId,
+          name: data.name,
+          type: 'session'
+        })
+      })
+
+      if (!response.ok) {
+        const errorData = await response.text()
+        throw new Error(errorData || 'Failed to create session')
+      }
+
+      const responseData = await response.json()
+      toast({
+        title: "Success",
+        description: `Successfully created session: ${data.name}`
+      })
+
+      // Refresh the sessions list
+      await handleListSessions()
+      setCreateSessionDialogOpen(false)
+    } catch (error) {
+      console.error('Error creating session:', error)
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error instanceof Error ? error.message : 'Failed to create session'
+      })
+    }
+  }
+
+  const handleUpdateSession = async (sessionId: string, updates: any) => {
+    try {
+      console.log('Frontend: Starting request to update session:', sessionId)
+      const response = await fetch(`/api/sessions/${encodeURIComponent(sessionId)}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        },
+        body: JSON.stringify(updates)
+      })
+
+      if (!response.ok) {
+        const errorData = await response.text()
+        throw new Error(errorData || 'Failed to update session')
+      }
+
+      const responseData = await response.json()
+      toast({
+        title: "Success",
+        description: `Successfully updated session: ${updates.name || sessionId}`
+      })
+
+      // Refresh the sessions list
+      await handleListSessions()
+    } catch (error) {
+      console.error('Error updating session:', error)
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error instanceof Error ? error.message : 'Failed to update session'
+      })
+    }
+  }
+
+  const handleAddMessage = async (sessionId: string, message: any) => {
+    try {
+      console.log('Frontend: Starting request to add message to session:', sessionId)
+      const response = await fetch(`/api/sessions/${encodeURIComponent(sessionId)}/messages`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        },
+        body: JSON.stringify(message)
+      })
+
+      if (!response.ok) {
+        const errorData = await response.text()
+        throw new Error(errorData || 'Failed to add message')
+      }
+
+      const responseData = await response.json()
+      toast({
+        title: "Success",
+        description: "Message added successfully"
+      })
+
+      // Refresh the selected session to show the new message
+      const updatedSession = await fetch(`/api/sessions/${encodeURIComponent(sessionId)}`, {
+        headers: {
+          'Accept': 'application/json',
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        }
+      }).then(res => res.json())
+
+      setSelectedSession(updatedSession)
+    } catch (error) {
+      console.error('Error adding message:', error)
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error instanceof Error ? error.message : 'Failed to add message'
+      })
+    }
+  }
+
+  const handleDeleteSession = async (sessionId: string) => {
+    setIsDeletingSession(true)
+    try {
+      console.log('Frontend: Starting request to delete session:', sessionId)
+      const response = await fetch(`/api/sessions/${encodeURIComponent(sessionId)}`, {
+        method: 'DELETE',
+        headers: {
+          'Accept': 'application/json',
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        }
+      })
+
+      if (!response.ok) {
+        const errorData = await response.text()
+        throw new Error(errorData || 'Failed to delete session')
+      }
+
+      toast({
+        title: "Success",
+        description: `Successfully deleted session: ${sessionId}`
+      })
+
+      // Refresh the sessions list
+      await handleListSessions()
+    } catch (error) {
+      console.error('Error deleting session:', error)
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error instanceof Error ? error.message : 'Failed to delete session'
+      })
+    } finally {
+      setIsDeletingSession(false)
+      setDeleteSessionDialogOpen(false)
+    }
+  }
+
+  const handleSystemWipe = async (systemWipeKey: string) => {
+    try {
+      console.log('Frontend: Starting system wipe request')
+      const response = await fetch('/api/sessions/system-wipe', {
+        method: 'DELETE',
+        headers: {
+          'Accept': 'application/json',
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache',
+          'X-System-Wipe-Key': systemWipeKey
+        }
+      })
+
+      if (!response.ok) {
+        const errorData = await response.text()
+        throw new Error(errorData || 'Failed to perform system wipe')
+      }
+
+      toast({
+        title: "Success",
+        description: "System wipe completed successfully"
+      })
+
+      // Refresh the sessions list
+      await handleListSessions()
+      setSystemWipeDialogOpen(false)
+    } catch (error) {
+      console.error('Error during system wipe:', error)
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error instanceof Error ? error.message : 'Failed to perform system wipe'
+      })
+    }
+  }
+
+  // Update the handleViewSession function to be simpler
+  const handleViewSession = (session: any) => {
+    setSelectedSession(session)
+    setViewSessionDialogOpen(true)
+  }
+
+  // Add a new function to load messages
+  const handleLoadSessionMessages = async (sessionId: string) => {
+    try {
+      console.log('Frontend: Loading messages for session:', sessionId)
+      const response = await fetch(`/api/sessions/${encodeURIComponent(sessionId)}/messages`)
+      if (!response.ok) {
+        throw new Error('Failed to fetch session messages')
+      }
+      const messages = await response.json()
+      console.log('Frontend: Messages data received:', messages)
+      
+      if (!Array.isArray(messages)) {
+        throw new Error('Invalid response format: expected an array of messages')
+      }
+      
+      setSelectedSession((prev: SessionData | null) => {
+        if (!prev) return prev
+        return {
+          ...prev,
+          messages: messages
+        }
+      })
+    } catch (error) {
+      console.error('Error loading session messages:', error)
+      toast({
+        title: 'Error',
+        description: 'Failed to load session messages',
+        variant: 'destructive'
+      })
     }
   }
 
@@ -828,7 +1109,7 @@ export default function AdminPage() {
               }}
             >
               <Plus className="h-4 w-4" />
-              Add Capability
+              Create Capability
             </Button>
             <Button 
               variant="outline" 
@@ -836,7 +1117,14 @@ export default function AdminPage() {
               onClick={handleListCapabilities}
               disabled={isLoadingCapabilities}
             >
-              {isLoadingCapabilities ? 'Loading...' : 'List Capabilities'}
+              {isLoadingCapabilities ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Loading...
+                </>
+              ) : (
+                'Refresh'
+              )}
             </Button>
           </div>
         }
@@ -845,11 +1133,11 @@ export default function AdminPage() {
           <table className="w-full">
             <thead className="bg-muted/50">
               <tr>
-                <th className="text-left p-4 font-medium">Name</th>
-                <th className="text-left p-4 font-medium">Description</th>
-                <th className="text-left p-4 font-medium">Type</th>
-                <th className="text-left p-4 font-medium">Tags</th>
-                <th className="text-right p-4 font-medium">Actions</th>
+                <th className="text-left p-4 font-medium w-[200px]">Name</th>
+                <th className="text-left p-4 font-medium w-[200px]">Description</th>
+                <th className="text-left p-4 font-medium w-[120px]">Type</th>
+                <th className="text-left p-4 font-medium w-[200px]">Tags</th>
+                <th className="text-right p-4 font-medium w-[180px]">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
@@ -869,10 +1157,17 @@ export default function AdminPage() {
                 capabilities.map((capability) => (
                   <tr key={capability.id}>
                     <td className="p-4 font-medium">{capability.name}</td>
-                    <td className="p-4 text-sm text-muted-foreground">{capability.description}</td>
+                    <td className="p-4 text-sm text-muted-foreground">
+                      <span 
+                        title={capability.description}
+                        className="cursor-help inline-block max-w-[180px] truncate"
+                      >
+                        {capability.description}
+                      </span>
+                    </td>
                     <td className="p-4 text-sm">{capability.capabilityType}</td>
                     <td className="p-4">
-                      <div className="flex flex-wrap gap-1">
+                <div className="flex flex-wrap gap-1">
                         {capability.tags.map((tag, index) => {
                           const colorClasses = [
                             "bg-blue-500/10 text-blue-700 dark:text-blue-300",
@@ -888,21 +1183,21 @@ export default function AdminPage() {
                               key={tag} 
                               className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${colorClass}`}
                             >
-                              {tag}
-                            </span>
+                      {tag}
+                    </span>
                           );
                         })}
-                      </div>
+                </div>
                     </td>
                     <td className="p-4">
                       <div className="flex items-center justify-end gap-2">
                         <Button 
                           variant="ghost" 
                           size="sm"
-                          className="text-muted-foreground hover:text-foreground"
+                          className="text-muted-foreground hover:text-foreground w-[110px]"
                           onClick={() => handleUpdate(capability)}
                         >
-                          Update
+                          View & Edit
                         </Button>
                         <Button 
                           variant="destructive"
@@ -918,7 +1213,7 @@ export default function AdminPage() {
               )}
             </tbody>
           </table>
-        </div>
+              </div>
       </CollapsibleCard>
 
       {/* Indexes Section */}
@@ -941,12 +1236,19 @@ export default function AdminPage() {
               onClick={handleListIndexes}
               disabled={isLoadingIndexes}
             >
-              {isLoadingIndexes ? 'Loading...' : 'List Indexes'}
+              {isLoadingIndexes ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Loading...
+                </>
+              ) : (
+                'Refresh'
+              )}
             </Button>
           </div>
         }
       >
-        <div className="rounded-md border">
+          <div className="rounded-md border">
           <table className="w-full">
             <thead className="bg-muted/50">
               <tr>
@@ -956,16 +1258,16 @@ export default function AdminPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {indexError ? (
+            {indexError ? (
                 <tr>
                   <td colSpan={3} className="p-4 text-center text-red-500">
-                    {indexError}
+                {indexError}
                   </td>
                 </tr>
-              ) : indexes.length === 0 ? (
+            ) : indexes.length === 0 ? (
                 <tr>
                   <td colSpan={3} className="p-4 text-center text-muted-foreground">
-                    {isLoadingIndexes ? 'Loading indexes...' : 'No indexes created yet'}
+                {isLoadingIndexes ? 'Loading indexes...' : 'No indexes created yet'}
                   </td>
                 </tr>
               ) : (
@@ -979,28 +1281,28 @@ export default function AdminPage() {
                     </td>
                     <td className="p-4">
                       <div className="flex items-center justify-end space-x-2">
-                        <Button 
-                          variant="ghost" 
-                          size="sm"
-                          className="text-muted-foreground hover:text-foreground"
-                          onClick={() => {
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        className="text-muted-foreground hover:text-foreground"
+                        onClick={() => {
                             setSelectedIndexForSearch(indexName);
                             setSearchDialogOpen(true);
-                          }}
-                        >
+                        }}
+                      >
                           Search
-                        </Button>
-                        <Button 
-                          variant="ghost" 
-                          size="sm"
-                          className="text-muted-foreground hover:text-foreground"
-                          onClick={() => {
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        className="text-muted-foreground hover:text-foreground"
+                        onClick={() => {
                             setSelectedIndexForDocuments(indexName);
                             setDocumentsDialogOpen(true);
-                          }}
-                        >
-                          Documents
-                        </Button>
+                        }}
+                      >
+                        Documents
+                      </Button>
                         <div className="h-4 w-px bg-border" />
                         <Button 
                           variant="ghost" 
@@ -1013,16 +1315,7 @@ export default function AdminPage() {
                         >
                           Generate
                         </Button>
-                        <Button 
-                          variant="ghost" 
-                          size="sm"
-                          className="text-muted-foreground hover:text-foreground"
-                          onClick={() => {
-                            console.log('Update/Add clicked for', indexName)
-                          }}
-                        >
-                          Update
-                        </Button>
+                        <div className="h-4 w-px bg-border" />
                         <Button 
                           variant="destructive"
                           size="sm"
@@ -1034,14 +1327,14 @@ export default function AdminPage() {
                         >
                           Delete
                         </Button>
-                      </div>
+                    </div>
                     </td>
                   </tr>
                 ))
               )}
             </tbody>
           </table>
-        </div>
+                  </div>
       </CollapsibleCard>
 
       {/* Users Section */}
@@ -1064,7 +1357,14 @@ export default function AdminPage() {
               onClick={handleListUsers}
               disabled={isLoadingUsers}
             >
-              {isLoadingUsers ? 'Loading...' : 'List Users'}
+              {isLoadingUsers ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Loading...
+                </>
+              ) : (
+                'Refresh'
+              )}
             </Button>
           </div>
         }
@@ -1112,20 +1412,12 @@ export default function AdminPage() {
                           variant="ghost" 
                           size="sm"
                           className="text-muted-foreground hover:text-foreground"
-                          onClick={() => handleViewUser(user.userInfo.email)}
-                        >
-                          View
-                        </Button>
-                        <Button 
-                          variant="ghost" 
-                          size="sm"
-                          className="text-muted-foreground hover:text-foreground"
                           onClick={() => {
                             setSelectedUserData(user)
-                            setUpdateUserDialogOpen(true)
+                            setViewUserDialogOpen(true)
                           }}
                         >
-                          Update
+                          View & Edit
                         </Button>
                         <Button 
                           variant="destructive"
@@ -1141,7 +1433,7 @@ export default function AdminPage() {
               )}
             </tbody>
           </table>
-        </div>
+          </div>
       </CollapsibleCard>
 
       {/* Sessions Section */}
@@ -1153,58 +1445,106 @@ export default function AdminPage() {
             <Button 
               variant="outline" 
               className="gap-2"
+              onClick={() => {
+                setCreateSessionDialogOpen(true)
+              }}
+            >
+              <Plus className="h-4 w-4" />
+              Create Session
+            </Button>
+            <Button 
+              variant="outline" 
+              className="gap-2"
               onClick={handleListSessions}
               disabled={isLoadingSessions}
             >
-              {isLoadingSessions ? 'Loading...' : 'List Sessions'}
+              {isLoadingSessions ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Loading...
+                </>
+              ) : (
+                'Refresh'
+              )}
             </Button>
           </div>
         }
       >
+        {/* Filter Section */}
+        <div className="mb-4 flex gap-4">
+          <div className="flex-1">
+            <Label htmlFor="sessionFilter">Session ID</Label>
+            <Input
+              id="sessionFilter"
+              placeholder="Filter by Session ID..."
+              value={sessionFilter}
+              onChange={(e) => setSessionFilter(e.target.value)}
+              className="mt-1"
+            />
+          </div>
+          <div className="flex-1">
+            <Label htmlFor="userFilter">User ID</Label>
+            <Input
+              id="userFilter"
+              placeholder="Filter by User ID..."
+              value={userFilter}
+              onChange={(e) => setUserFilter(e.target.value)}
+              className="mt-1"
+            />
+          </div>
+          <div className="flex items-end">
+            <Button 
+              variant="ghost" 
+              onClick={() => {
+                setSessionFilter('')
+                setUserFilter('')
+              }}
+            >
+              Clear Filters
+            </Button>
+          </div>
+        </div>
+
         <div className="rounded-md border">
           <table className="w-full">
             <thead className="bg-muted/50">
               <tr>
                 <th className="text-left p-4 font-medium">Session ID</th>
-                <th className="text-left p-4 font-medium">User</th>
-                <th className="text-left p-4 font-medium">Started</th>
-                <th className="text-left p-4 font-medium">Last Active</th>
-                <th className="text-left p-4 font-medium">Status</th>
+                <th className="text-left p-4 font-medium">User ID</th>
+                <th className="text-left p-4 font-medium">Name</th>
+                <th className="text-left p-4 font-medium">Created</th>
                 <th className="text-right p-4 font-medium">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
               {sessionsError ? (
                 <tr>
-                  <td colSpan={6} className="p-4 text-center text-red-500">
+                  <td colSpan={5} className="p-4 text-center text-red-500">
                     {sessionsError}
                   </td>
                 </tr>
               ) : sessions.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="p-4 text-center text-muted-foreground">
+                  <td colSpan={5} className="p-4 text-center text-muted-foreground">
                     {isLoadingSessions ? 'Loading sessions...' : 'No active sessions found'}
                   </td>
                 </tr>
               ) : (
-                sessions.map((session) => (
+                filteredSessions.map((session) => (
                   <tr key={session.id}>
-                    <td className="p-4 font-mono text-sm">{session.id}</td>
-                    <td className="p-4">{session.user}</td>
-                    <td className="p-4 text-sm text-muted-foreground">
-                      {new Date(session.startTime).toLocaleString()}
-                    </td>
-                    <td className="p-4 text-sm text-muted-foreground">
-                      {new Date(session.lastActiveTime).toLocaleString()}
+                    <td className="p-4 font-mono text-sm">
+                      <span title={session.sessionId}>
+                        {abbreviateId(session.sessionId)}
+                      </span>
                     </td>
                     <td className="p-4">
-                      <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
-                        session.isActive 
-                          ? "bg-emerald-500/15 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400"
-                          : "bg-yellow-500/15 text-yellow-700 dark:bg-yellow-500/10 dark:text-yellow-400"
-                      }`}>
-                        {session.isActive ? 'Active' : 'Inactive'}
+                      <span title={session.userId} className="cursor-help">
+                        {abbreviateId(session.userId, 12)}
                       </span>
+                    </td>
+                    <td className="p-4">{session.name || 'Chat'}</td>
+                    <td className="p-4 text-sm text-muted-foreground">
+                      {new Date(session.timestamp).toLocaleString()}
                     </td>
                     <td className="p-4">
                       <div className="flex items-center justify-end gap-2">
@@ -1212,10 +1552,7 @@ export default function AdminPage() {
                           variant="ghost" 
                           size="sm"
                           className="text-muted-foreground hover:text-foreground"
-                          onClick={() => {
-                            // View session details
-                            console.log('View session:', session.id)
-                          }}
+                          onClick={() => handleViewSession(session)}
                         >
                           View
                         </Button>
@@ -1223,11 +1560,11 @@ export default function AdminPage() {
                           variant="destructive"
                           size="sm"
                           onClick={() => {
-                            // End session
-                            console.log('End session:', session.id)
+                            setSessionToDelete(session.sessionId)
+                            setDeleteSessionDialogOpen(true)
                           }}
                         >
-                          End Session
+                          Delete
                         </Button>
                       </div>
                     </td>
@@ -1237,6 +1574,18 @@ export default function AdminPage() {
             </tbody>
           </table>
         </div>
+
+        {/* System Operations Section */}
+        <div className="mt-6 border-t pt-6">
+          <h4 className="text-sm font-medium mb-4">System Operations</h4>
+          <Button 
+            variant="destructive" 
+            size="sm"
+            onClick={() => setSystemWipeDialogOpen(true)}
+          >
+            System Wipe
+          </Button>
+        </div>
       </CollapsibleCard>
 
       {/* Settings Section */}
@@ -1245,42 +1594,20 @@ export default function AdminPage() {
         icon={<Settings className="h-5 w-5" />}
         defaultExpanded={false}
       >
-        <div className="grid grid-cols-2 gap-4">
-          <Button variant="outline" className="justify-start">
-            Configure API Endpoints
-          </Button>
-          <Button variant="outline" className="justify-start">
-            Manage User Preferences
-          </Button>
-          <Button variant="outline" className="justify-start">
-            Update Notification Settings
-          </Button>
-          <Button variant="outline" className="justify-start">
-            System Configuration
-          </Button>
-        </div>
-      </CollapsibleCard>
-
-      {/* Administration Section */}
-      <CollapsibleCard
-        title="Administration"
-        icon={<Shield className="h-5 w-5" />}
-        defaultExpanded={false}
-      >
-        <div className="grid grid-cols-2 gap-4">
-          <Button variant="outline" className="justify-start">
-            User Management
-          </Button>
-          <Button variant="outline" className="justify-start">
-            Role Assignments
-          </Button>
-          <Button variant="outline" className="justify-start">
-            Access Control
-          </Button>
-          <Button variant="outline" className="justify-start">
-            Audit Logs
-          </Button>
-        </div>
+          <div className="grid grid-cols-2 gap-4">
+            <Button variant="outline" className="justify-start">
+              Configure API Endpoints
+            </Button>
+            <Button variant="outline" className="justify-start">
+              Manage User Preferences
+            </Button>
+            <Button variant="outline" className="justify-start">
+              Update Notification Settings
+            </Button>
+            <Button variant="outline" className="justify-start">
+              System Configuration
+            </Button>
+          </div>
       </CollapsibleCard>
 
       <CapabilityDialog
@@ -1349,12 +1676,12 @@ export default function AdminPage() {
         results={searchResults}
       />
 
-      <UpdateCapabilityDialog
-        open={updateDialogOpen}
+      <ViewCapabilityDialog
+        open={viewCapabilityDialogOpen}
         onOpenChange={(open) => {
-          setUpdateDialogOpen(open)
+          setViewCapabilityDialogOpen(open)
           if (!open) {
-            setSelectedCapability(undefined)
+            setSelectedCapability(null)
           }
         }}
         capability={selectedCapability}
@@ -1379,12 +1706,6 @@ export default function AdminPage() {
         open={viewUserDialogOpen}
         onOpenChange={setViewUserDialogOpen}
         userData={selectedUserData}
-      />
-
-      <UpdateUserDialog
-        open={updateUserDialogOpen}
-        onOpenChange={setUpdateUserDialogOpen}
-        userData={selectedUserData}
         onSubmit={handleUpdateUser}
       />
 
@@ -1395,6 +1716,38 @@ export default function AdminPage() {
         onConfirm={handleDeleteUser}
         isDeleting={isDeletingUser}
       />
+
+      <ViewSessionDialog
+        open={viewSessionDialogOpen}
+        onOpenChange={setViewSessionDialogOpen}
+        session={selectedSession}
+        onUpdate={handleUpdateSession}
+        onAddMessage={handleAddMessage}
+        onLoadMessages={handleLoadSessionMessages}
+      />
+
+      <CreateSessionDialog
+        open={createSessionDialogOpen}
+        onOpenChange={setCreateSessionDialogOpen}
+        onSubmit={handleCreateSession}
+        isCreating={false}
+      />
+
+      <DeleteSessionDialog
+        open={deleteSessionDialogOpen}
+        onOpenChange={setDeleteSessionDialogOpen}
+        sessionId={sessionToDelete}
+        onConfirm={handleDeleteSession}
+        isDeleting={isDeletingSession}
+      />
+
+      <SystemWipeDialog
+        open={systemWipeDialogOpen}
+        onOpenChange={setSystemWipeDialogOpen}
+        onConfirm={handleSystemWipe}
+        isWiping={false}
+      />
+
     </div>
   )
 } 

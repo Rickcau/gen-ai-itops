@@ -4,10 +4,10 @@ import { NextRequest } from 'next/server'
 const API_BASE_URL = process.env.API_BASE_URL || 'https://localhost:7049'
 
 export async function GET() {
-  console.log('Next.js API Route: GET /api/sessions called')
+  console.log('Next.js API Route: GET /api/users called')
   try {
-    const url = `${API_BASE_URL}/sessions`
-    console.log('Next.js API Route: Fetching sessions from:', url)
+    const url = `${API_BASE_URL}/users`
+    console.log('Next.js API Route: Fetching users from:', url)
 
     const apiKey = process.env.API_KEY
     if (!apiKey) {
@@ -19,16 +19,16 @@ export async function GET() {
     const data = await response.json()
     return createApiResponse(data)
   } catch (error) {
-    console.error('Error in sessions API route:', error)
+    console.error('Error in users API route:', error)
     return createErrorResponse(
-      error instanceof Error ? error.message : 'Failed to fetch sessions',
+      error instanceof Error ? error.message : 'Failed to fetch users',
       500
     )
   }
 }
 
 export async function POST(request: NextRequest) {
-  console.log('Next.js API Route: POST /api/sessions called')
+  console.log('Next.js API Route: POST /api/users called')
   try {
     const apiKey = process.env.API_KEY
     if (!apiKey) {
@@ -36,24 +36,24 @@ export async function POST(request: NextRequest) {
       return createErrorResponse('API key is not configured', 500)
     }
 
-    const sessionData = await request.json()
-    console.log('Next.js API Route: Creating session:', sessionData)
+    const userData = await request.json()
+    console.log('Next.js API Route: Creating user:', userData)
 
-    const url = `${API_BASE_URL}/sessions`
-    console.log('Next.js API Route: Creating session at:', url)
+    const url = `${API_BASE_URL}/users`
+    console.log('Next.js API Route: Creating user at:', url)
 
     const response = await fetchFromApi(url, {
       method: 'POST',
-      body: JSON.stringify(sessionData)
+      body: JSON.stringify(userData)
     })
 
     const data = await response.json()
     return createApiResponse(data)
   } catch (error) {
-    console.error('Error in create session API route:', error)
+    console.error('Error in create user API route:', error)
     return createErrorResponse(
-      error instanceof Error ? error.message : 'Failed to create session',
+      error instanceof Error ? error.message : 'Failed to create user',
       500
     )
   }
-}
+} 

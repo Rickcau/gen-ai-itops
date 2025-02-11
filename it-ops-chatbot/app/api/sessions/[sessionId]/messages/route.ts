@@ -1,84 +1,76 @@
-import { NextResponse } from 'next/server'
+import { createApiResponse, createErrorResponse, fetchFromApi } from '@/lib/api-utils'
+import { NextRequest } from 'next/server'
 
 const API_BASE_URL = process.env.API_BASE_URL || 'https://localhost:7049'
 
-export async function GET(
-  request: Request,
+export async function POST(
+  request: NextRequest,
   { params }: { params: { sessionId: string } }
 ) {
+  console.log('Next.js API Route: POST /api/sessions/[sessionId]/messages called')
   try {
     const sessionId = params.sessionId
+    console.log('Next.js API Route: Adding message to session:', sessionId)
 
-    if (!sessionId) {
-      return NextResponse.json({ error: 'sessionId is required' }, { status: 400 })
+    const apiKey = process.env.API_KEY
+    if (!apiKey) {
+      console.error('API key is missing')
+      return createErrorResponse('API key is not configured', 500)
     }
 
-    // In development, configure Node to accept self-signed certificates
-    if (process.env.NODE_ENV === 'development') {
-      process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'
-    }
+    const messageData = await request.json()
+    console.log('Next.js API Route: Message data:', messageData)
 
-    const apiUrl = `${API_BASE_URL}/sessions/${sessionId}/messages`
-    console.log('Fetching messages from:', apiUrl)
+    const url = `${API_BASE_URL}/sessions/${encodeURIComponent(sessionId)}/messages`
+    console.log('Next.js API Route: Posting to:', url)
 
-    const response = await fetch(apiUrl, {
-      method: 'GET',
-      cache: 'no-store',  // Disable caching
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'api-key': process.env.API_KEY || ''
-      }
+    const response = await fetchFromApi(url, {
+      method: 'POST',
+      body: JSON.stringify(messageData)
     })
 
-    console.log('Backend response status:', response.status)
-
-    if (!response.ok) {
-      const errorText = await response.text()
-      console.error('Error from backend:', {
-        status: response.status,
-        statusText: response.statusText,
-        body: errorText
-      })
-      return NextResponse.json(
-        { error: errorText || 'Backend API request failed' },
-        { status: response.status }
-      )
-    }
-
-    // Get the raw text first to verify what we're receiving
-    const rawText = await response.text()
-    console.log('Raw response text:', rawText)
-
-    // Parse the text into JSON
-    const data = JSON.parse(rawText)
-    console.log('Parsed response data:', {
-      isArray: Array.isArray(data),
-      length: Array.isArray(data) ? data.length : 0,
-      data: data
-    })
-
-    if (!Array.isArray(data)) {
-      console.error('Expected array but got:', typeof data)
-      throw new Error('Invalid response format from backend')
-    }
-
-    // Return the data directly without any transformation
-    return new NextResponse(rawText, {
-      status: 200,
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    })
+    const data = await response.json()
+    return createApiResponse(data)
   } catch (error) {
-    console.error('Error in messages API route:', {
-      name: error instanceof Error ? error.name : 'Unknown',
-      message: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : undefined
-    })
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
+    console.error('Error in add message API route:', error)
+    return createErrorResponse(
+      error instanceof Error ? error.message : 'Failed to add message',
+      500
+    )
+  }
+}
+
+export async function GET(
+  request: NextRequest,
+  { params }: { params: { sessionId: string } }
+) {
+  console.log('Next.js API Route: GET /api/sessions/[sessionId]/messages called')
+  try {
+    const sessionId = params.sessionId
+    console.log('Next.js API Route: Fetching messages for session:', sessionId)
+
+    const apiKey = process.env.API_KEY
+    if (!apiKey) {
+      console.error('API key is missing')
+      return createErrorResponse('API key is not configured', 500)
+    }
+
+    const url = `${API_BASE_URL}/sessions/${encodeURIComponent(sessionId)}/messages`
+    console.log('Next.js API Route: Fetching from:', url)
+
+    const response = await fetchFromApi(url)
+    if (!response.ok) {
+      throw new Error(`API request failed: ${response.statusText}`)
+    }
+    
+    const data = await response.json()
+    console.log('Next.js API Route: Messages data received:', data)
+    return createApiResponse(data)
+  } catch (error) {
+    console.error('Error in get session messages API route:', error)
+    return createErrorResponse(
+      error instanceof Error ? error.message : 'Failed to fetch session messages',
+      500
     )
   }
 }
