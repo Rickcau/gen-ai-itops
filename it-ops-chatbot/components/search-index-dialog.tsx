@@ -5,17 +5,7 @@ import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { useState } from "react"
 import { Loader2 } from "lucide-react"
-
-interface SearchParams {
-  query: string
-  k: number
-  top: number
-  filter: string | null
-  textOnly: boolean
-  hybrid: boolean
-  semantic: boolean
-  minRerankerScore: number
-}
+import type { SearchParams, SearchResult } from "@/types/search"
 
 interface SearchIndexDialogProps {
   open: boolean
@@ -23,7 +13,7 @@ interface SearchIndexDialogProps {
   indexName: string
   isSearching: boolean
   onSearch: (indexName: string, params: SearchParams) => Promise<void>
-  results?: any[]
+  results?: SearchResult[]
 }
 
 export function SearchIndexDialog({

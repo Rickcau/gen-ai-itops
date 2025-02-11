@@ -8,13 +8,14 @@ import { Loader2, Upload, Copy, ClipboardCheck } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/components/ui/use-toast"
+import type { Document } from "@/types/document"
 
 interface ListDocumentsDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   indexName: string
   isLoading?: boolean
-  documents?: any[]
+  documents?: Document[]
   error?: string
   onFetch: (params: { 
     indexName: string

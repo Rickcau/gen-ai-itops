@@ -163,6 +163,7 @@ export default function AdminPage() {
   const [systemWipeDialogOpen, setSystemWipeDialogOpen] = useState(false)
   const [isDeletingSession, setIsDeletingSession] = useState(false)
   const [createSessionDialogOpen, setCreateSessionDialogOpen] = useState(false)
+  const [isCreatingSession, setIsCreatingSession] = useState(false)
 
   // Filter sessions based on search criteria
   const filteredSessions = useMemo(() => {
@@ -859,37 +860,24 @@ export default function AdminPage() {
   }
 
   const handleCreateSession = async (data: { userId: string; name: string }) => {
+    setIsCreatingSession(true)
     try {
-      console.log('Frontend: Starting request to create session:', data)
       const response = await fetch('/api/sessions', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'Cache-Control': 'no-cache',
-          'Pragma': 'no-cache'
+          'Content-Type': 'application/json'
         },
-        body: JSON.stringify({
-          userId: data.userId,
-          name: data.name,
-          type: 'session'
-        })
+        body: JSON.stringify(data)
       })
-
-      if (!response.ok) {
-        const errorData = await response.text()
-        throw new Error(errorData || 'Failed to create session')
-      }
-
       const responseData = await response.json()
+      if (!response.ok) {
+        throw new Error(responseData.message || 'Failed to create session')
+      }
       toast({
         title: "Success",
-        description: `Successfully created session: ${data.name}`
+        description: "Session created successfully"
       })
-
-      // Refresh the sessions list
-      await handleListSessions()
-      setCreateSessionDialogOpen(false)
+      handleListSessions() // Refresh the sessions list
     } catch (error) {
       console.error('Error creating session:', error)
       toast({
@@ -897,10 +885,13 @@ export default function AdminPage() {
         title: "Error",
         description: error instanceof Error ? error.message : 'Failed to create session'
       })
+    } finally {
+      setIsCreatingSession(false)
+      setCreateSessionDialogOpen(false)
     }
   }
 
-  const handleUpdateSession = async (sessionId: string, updates: any) => {
+  const handleUpdateSession = async (sessionId: string, updates: SessionUpdate) => {
     try {
       console.log('Frontend: Starting request to update session:', sessionId)
       const response = await fetch(`/api/sessions/${encodeURIComponent(sessionId)}`, {
@@ -937,7 +928,7 @@ export default function AdminPage() {
     }
   }
 
-  const handleAddMessage = async (sessionId: string, message: any) => {
+  const handleAddMessage = async (sessionId: string, message: SessionMessage) => {
     try {
       console.log('Frontend: Starting request to add message to session:', sessionId)
       const response = await fetch(`/api/sessions/${encodeURIComponent(sessionId)}/messages`, {
@@ -1057,7 +1048,7 @@ export default function AdminPage() {
   }
 
   // Update the handleViewSession function to be simpler
-  const handleViewSession = (session: any) => {
+  const handleViewSession = (session: Session) => {
     setSelectedSession(session)
     setViewSessionDialogOpen(true)
   }
@@ -1754,7 +1745,7 @@ export default function AdminPage() {
         open={createSessionDialogOpen}
         onOpenChange={setCreateSessionDialogOpen}
         onSubmit={handleCreateSession}
-        isCreating={false}
+        isCreating={isCreatingSession}
       />
 
       <DeleteSessionDialog
