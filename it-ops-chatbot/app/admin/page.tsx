@@ -27,6 +27,8 @@ import { DeleteSessionDialog } from '@/components/delete-session-dialog'
 import { CreateSessionDialog } from '@/components/create-session-dialog'
 import { SystemWipeDialog } from '@/components/system-wipe-dialog'
 import { ViewCapabilityDialog } from '@/components/view-capability-dialog'
+import type { Session, SessionMessage, SessionUpdate } from '@/types/session'
+import type { SearchResult } from '@/types/search'
 
 interface CollapsibleCardProps {
   title: string
@@ -69,24 +71,6 @@ function CollapsibleCard({
   )
 }
 
-interface SessionData {
-  sessionId: string;
-  userId: string;
-  name: string;
-  timestamp: string;
-  messages?: Array<{
-    id: string;
-    type: string;
-    sessionId: string;
-    timeStamp: string;
-    prompt: string;
-    sender: string;
-    promptTokens: number;
-    completion: string | null;
-    completionTokens: number;
-  }>;
-}
-
 interface SearchParams {
   query: string;
   k: number;
@@ -112,6 +96,24 @@ interface UserData {
   };
 }
 
+interface Document {
+  id: string;
+  content: string;
+  metadata: Record<string, unknown>;
+  embedding?: number[];
+}
+
+interface ApiResponse<T> {
+  data: T;
+  message: string;
+  success: boolean;
+}
+
+// Add a type guard function to check if userId exists and is a string
+const hasUserId = (session: Session): session is Session & { userId: string } => {
+  return typeof session.userId === 'string'
+}
+
 export default function AdminPage() {
   const router = useRouter()
   const { authState } = useAuth()
@@ -129,7 +131,7 @@ export default function AdminPage() {
   const { toast } = useToast()
   const [documentsDialogOpen, setDocumentsDialogOpen] = useState(false)
   const [selectedIndexForDocuments, setSelectedIndexForDocuments] = useState<string>('')
-  const [documents, setDocuments] = useState<any[]>([])
+  const [documents, setDocuments] = useState<Document[]>([])
   const [isLoadingDocuments, setIsLoadingDocuments] = useState(false)
   const [documentsError, setDocumentsError] = useState<string | undefined>(undefined)
   const [generateDialogOpen, setGenerateDialogOpen] = useState(false)
@@ -138,25 +140,25 @@ export default function AdminPage() {
   const [searchDialogOpen, setSearchDialogOpen] = useState(false)
   const [selectedIndexForSearch, setSelectedIndexForSearch] = useState<string>('')
   const [isSearching, setIsSearching] = useState(false)
-  const [searchResults, setSearchResults] = useState<any[]>([])
+  const [searchResults, setSearchResults] = useState<SearchResult[]>([])
   const [selectedCapability, setSelectedCapability] = useState<Capability | null>(null)
   const [viewCapabilityDialogOpen, setViewCapabilityDialogOpen] = useState(false)
   const [capabilityToDelete, setCapabilityToDelete] = useState<Capability | null>(null)
   const [isDeletingCapability, setIsDeletingCapability] = useState(false)
-  const [sessions, setSessions] = useState<any[]>([])
+  const [sessions, setSessions] = useState<Session[]>([])
   const [isLoadingSessions, setIsLoadingSessions] = useState(false)
   const [sessionsError, setSessionsError] = useState<string | undefined>(undefined)
-  const [users, setUsers] = useState<any[]>([])
+  const [users, setUsers] = useState<UserData[]>([])
   const [isLoadingUsers, setIsLoadingUsers] = useState(false)
   const [usersError, setUsersError] = useState<string | undefined>(undefined)
   const [createUserDialogOpen, setCreateUserDialogOpen] = useState(false)
   const [viewUserDialogOpen, setViewUserDialogOpen] = useState(false)
-  const [selectedUserData, setSelectedUserData] = useState<any>(null)
+  const [selectedUserData, setSelectedUserData] = useState<UserData | null>(null)
   const [userToDelete, setUserToDelete] = useState<string | null>(null)
   const [isDeletingUser, setIsDeletingUser] = useState(false)
   const [sessionFilter, setSessionFilter] = useState('')
   const [userFilter, setUserFilter] = useState('')
-  const [selectedSession, setSelectedSession] = useState<any>(null)
+  const [selectedSession, setSelectedSession] = useState<Session | null>(null)
   const [viewSessionDialogOpen, setViewSessionDialogOpen] = useState(false)
   const [sessionToDelete, setSessionToDelete] = useState<string | null>(null)
   const [deleteSessionDialogOpen, setDeleteSessionDialogOpen] = useState(false)
@@ -165,11 +167,11 @@ export default function AdminPage() {
   const [createSessionDialogOpen, setCreateSessionDialogOpen] = useState(false)
   const [isCreatingSession, setIsCreatingSession] = useState(false)
 
-  // Filter sessions based on search criteria
+  // Update the filteredSessions to use the type guard
   const filteredSessions = useMemo(() => {
     return sessions.filter(session => {
       const matchesSessionId = session.sessionId.toLowerCase().includes(sessionFilter.toLowerCase())
-      const matchesUserId = session.userId?.toLowerCase().includes(userFilter.toLowerCase()) ?? false
+      const matchesUserId = !userFilter || (hasUserId(session) && session.userId.toLowerCase().includes(userFilter.toLowerCase()))
       return matchesSessionId && matchesUserId
     })
   }, [sessions, sessionFilter, userFilter])
@@ -751,30 +753,18 @@ export default function AdminPage() {
 
   const handleViewUser = async (email: string) => {
     try {
-      console.log('Frontend: Starting request to view user:', email)
-      const response = await fetch(`/api/users/${encodeURIComponent(email)}`, {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/json',
-          'Cache-Control': 'no-cache',
-          'Pragma': 'no-cache'
-        }
-      })
-
+      const response = await fetch(`/api/users/${encodeURIComponent(email)}`)
       if (!response.ok) {
-        throw new Error(`API request failed: ${response.statusText}`)
+        throw new Error('Failed to fetch user data')
       }
-
-      const data = await response.json()
-      console.log('Frontend: User data retrieved:', data)
-      setSelectedUserData(data)
+      const userData = await response.json()
+      setSelectedUserData(userData)
       setViewUserDialogOpen(true)
     } catch (error) {
-      console.error('Error viewing user:', error)
       toast({
         variant: "destructive",
         title: "Error",
-        description: error instanceof Error ? error.message : 'Failed to view user details'
+        description: error instanceof Error ? error.message : 'Failed to fetch user data'
       })
     }
   }
@@ -893,33 +883,30 @@ export default function AdminPage() {
 
   const handleUpdateSession = async (sessionId: string, updates: SessionUpdate) => {
     try {
-      console.log('Frontend: Starting request to update session:', sessionId)
       const response = await fetch(`/api/sessions/${encodeURIComponent(sessionId)}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'Cache-Control': 'no-cache',
-          'Pragma': 'no-cache'
         },
         body: JSON.stringify(updates)
       })
 
       if (!response.ok) {
-        const errorData = await response.text()
-        throw new Error(errorData || 'Failed to update session')
+        throw new Error('Failed to update session')
       }
 
-      const responseData = await response.json()
+      const updatedSession = await response.json()
+      setSessions(prevSessions => 
+        prevSessions.map(session => 
+          session.sessionId === sessionId ? updatedSession : session
+        )
+      )
+
       toast({
         title: "Success",
-        description: `Successfully updated session: ${updates.name || sessionId}`
+        description: "Session updated successfully"
       })
-
-      // Refresh the sessions list
-      await handleListSessions()
     } catch (error) {
-      console.error('Error updating session:', error)
       toast({
         variant: "destructive",
         title: "Error",
@@ -928,43 +915,32 @@ export default function AdminPage() {
     }
   }
 
-  const handleAddMessage = async (sessionId: string, message: SessionMessage) => {
+  const handleAddMessage = async (sessionId: string, message: Omit<SessionMessage, 'id' | 'sessionId' | 'timeStamp'>) => {
     try {
-      console.log('Frontend: Starting request to add message to session:', sessionId)
       const response = await fetch(`/api/sessions/${encodeURIComponent(sessionId)}/messages`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'Cache-Control': 'no-cache',
-          'Pragma': 'no-cache'
         },
         body: JSON.stringify(message)
       })
 
       if (!response.ok) {
-        const errorData = await response.text()
-        throw new Error(errorData || 'Failed to add message')
+        throw new Error('Failed to add message')
       }
 
-      const responseData = await response.json()
+      const updatedSession = await response.json()
+      setSessions(prevSessions =>
+        prevSessions.map(session =>
+          session.sessionId === sessionId ? updatedSession : session
+        )
+      )
+
       toast({
         title: "Success",
         description: "Message added successfully"
       })
-
-      // Refresh the selected session to show the new message
-      const updatedSession = await fetch(`/api/sessions/${encodeURIComponent(sessionId)}`, {
-        headers: {
-          'Accept': 'application/json',
-          'Cache-Control': 'no-cache',
-          'Pragma': 'no-cache'
-        }
-      }).then(res => res.json())
-
-      setSelectedSession(updatedSession)
     } catch (error) {
-      console.error('Error adding message:', error)
       toast({
         variant: "destructive",
         title: "Error",
@@ -976,30 +952,23 @@ export default function AdminPage() {
   const handleDeleteSession = async (sessionId: string) => {
     setIsDeletingSession(true)
     try {
-      console.log('Frontend: Starting request to delete session:', sessionId)
       const response = await fetch(`/api/sessions/${encodeURIComponent(sessionId)}`, {
-        method: 'DELETE',
-        headers: {
-          'Accept': 'application/json',
-          'Cache-Control': 'no-cache',
-          'Pragma': 'no-cache'
-        }
+        method: 'DELETE'
       })
 
       if (!response.ok) {
-        const errorData = await response.text()
-        throw new Error(errorData || 'Failed to delete session')
+        throw new Error('Failed to delete session')
       }
+
+      setSessions(prevSessions => prevSessions.filter(session => session.sessionId !== sessionId))
+      setDeleteSessionDialogOpen(false)
+      setSessionToDelete(null)
 
       toast({
         title: "Success",
-        description: `Successfully deleted session: ${sessionId}`
+        description: "Session deleted successfully"
       })
-
-      // Refresh the sessions list
-      await handleListSessions()
     } catch (error) {
-      console.error('Error deleting session:', error)
       toast({
         variant: "destructive",
         title: "Error",
@@ -1007,7 +976,6 @@ export default function AdminPage() {
       })
     } finally {
       setIsDeletingSession(false)
-      setDeleteSessionDialogOpen(false)
     }
   }
 
@@ -1047,40 +1015,26 @@ export default function AdminPage() {
     }
   }
 
-  // Update the handleViewSession function to be simpler
   const handleViewSession = (session: Session) => {
     setSelectedSession(session)
     setViewSessionDialogOpen(true)
   }
 
-  // Add a new function to load messages
   const handleLoadSessionMessages = async (sessionId: string) => {
     try {
-      console.log('Frontend: Loading messages for session:', sessionId)
       const response = await fetch(`/api/sessions/${encodeURIComponent(sessionId)}/messages`)
       if (!response.ok) {
-        throw new Error('Failed to fetch session messages')
+        throw new Error('Failed to load session messages')
       }
-      const messages = await response.json()
-      console.log('Frontend: Messages data received:', messages)
-      
-      if (!Array.isArray(messages)) {
-        throw new Error('Invalid response format: expected an array of messages')
+      const session = await response.json() as Session
+      if (session) {
+        setSelectedSession(session)
       }
-      
-      setSelectedSession((prev: SessionData | null) => {
-        if (!prev) return prev
-        return {
-          ...prev,
-          messages: messages
-        }
-      })
     } catch (error) {
-      console.error('Error loading session messages:', error)
       toast({
-        title: 'Error',
-        description: 'Failed to load session messages',
-        variant: 'destructive'
+        variant: "destructive",
+        title: "Error",
+        description: error instanceof Error ? error.message : 'Failed to load session messages'
       })
     }
   }
@@ -1737,7 +1691,6 @@ export default function AdminPage() {
         onOpenChange={setViewSessionDialogOpen}
         session={selectedSession}
         onUpdate={handleUpdateSession}
-        onAddMessage={handleAddMessage}
         onLoadMessages={handleLoadSessionMessages}
       />
 
