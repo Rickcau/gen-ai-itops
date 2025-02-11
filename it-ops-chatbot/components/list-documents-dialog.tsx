@@ -86,7 +86,7 @@ export function ListDocumentsDialog({
         throw new Error('Input must be an array of documents')
       }
       return parsed
-    } catch (error) {
+    } catch (error: unknown) {
       throw new Error(error instanceof Error ? error.message : 'Invalid JSON format')
     }
   }

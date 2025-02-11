@@ -28,7 +28,7 @@ import { CreateSessionDialog } from '@/components/create-session-dialog'
 import { SystemWipeDialog } from '@/components/system-wipe-dialog'
 import { ViewCapabilityDialog } from '@/components/view-capability-dialog'
 import type { Session, SessionMessage, SessionUpdate } from '@/types/session'
-import type { SearchResult } from '@/types/search'
+import type { SearchResult, SearchParams } from '@/types/search'
 
 interface CollapsibleCardProps {
   title: string
@@ -69,17 +69,6 @@ function CollapsibleCard({
       {isExpanded && <CardContent>{children}</CardContent>}
     </Card>
   )
-}
-
-interface SearchParams {
-  query: string;
-  k: number;
-  top: number;
-  filter?: string;
-  textOnly: boolean;
-  hybrid: boolean;
-  semantic: boolean;
-  minRerankerScore: number;
 }
 
 interface UserData {
@@ -207,8 +196,7 @@ export default function AdminPage() {
         throw new Error(errorData || 'Failed to add capability')
       }
 
-      const responseData = await response.json()
-      console.log('Frontend: Add successful:', responseData)
+      console.log('Frontend: Add successful:', await response.json())
       
       toast({
         title: "Success",
@@ -283,11 +271,6 @@ export default function AdminPage() {
       setIsDeletingCapability(false)
       setCapabilityToDelete(null)
     }
-  }
-
-  const handleEdit = (capability: Capability) => {
-    setEditingCapability(capability)
-    setDialogOpen(true)
   }
 
   const handleUpdate = (capability: Capability) => {
@@ -502,12 +485,17 @@ export default function AdminPage() {
     }
   };
 
-  const handleSearch = async (indexName: string, searchParams: SearchParams) => {
+  const handleSearch = async (indexName: string, params: SearchParams) => {
     setIsSearching(true);
     try {
       console.log('Frontend: Starting request to search index:', indexName);
       const url = `/api/indexes/capabilities/search?indexName=${encodeURIComponent(indexName)}`;
       
+      const adjustedSearchParams = { 
+        ...params, 
+        filter: params.filter ?? undefined 
+      };
+
       const response = await fetch(url, {
         method: 'POST',
         headers: {
@@ -515,7 +503,7 @@ export default function AdminPage() {
           'Accept': 'application/json',
           'Cache-Control': 'no-cache'
         },
-        body: JSON.stringify(searchParams)
+        body: JSON.stringify(adjustedSearchParams)
       });
 
       if (!response.ok) {
@@ -612,8 +600,7 @@ export default function AdminPage() {
         throw new Error(errorData || 'Failed to update capability')
       }
 
-      const data = await response.json()
-      console.log('Frontend: Update successful:', data)
+      console.log('Frontend: Update successful:', await response.json())
       toast({
         title: "Success",
         description: `Successfully updated capability: ${updatedCapability.name}`
@@ -1022,15 +1009,33 @@ export default function AdminPage() {
 
   const handleLoadSessionMessages = async (sessionId: string) => {
     try {
-      const response = await fetch(`/api/sessions/${encodeURIComponent(sessionId)}/messages`)
+      console.log('Frontend: Starting request to load session messages:', sessionId)
+      const response = await fetch(`/api/sessions/${encodeURIComponent(sessionId)}/messages`, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        }
+      })
+
       if (!response.ok) {
-        throw new Error('Failed to load session messages')
+        const errorText = await response.text()
+        throw new Error(errorText || 'Failed to load session messages')
       }
-      const session = await response.json() as Session
-      if (session) {
-        setSelectedSession(session)
-      }
+
+      const messages: SessionMessage[] = await response.json()
+      console.log('Frontend: Messages loaded:', messages)
+      
+      setSelectedSession(prev => {
+        if (!prev) return prev
+        return {
+          ...prev,
+          messages
+        }
+      })
     } catch (error) {
+      console.error('Error loading session messages:', error)
       toast({
         variant: "destructive",
         title: "Error",
@@ -1507,8 +1512,8 @@ export default function AdminPage() {
                       </span>
                     </td>
                     <td className="p-4">
-                      <span title={session.userId} className="cursor-help">
-                        {abbreviateId(session.userId, 12)}
+                      <span title={session.userId || ''} className="cursor-help">
+                        {abbreviateId(session.userId || '', 12)}
                       </span>
                     </td>
                     <td className="p-4">{session.name || 'Chat'}</td>

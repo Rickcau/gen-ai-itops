@@ -5,23 +5,25 @@ import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { useState, useEffect } from "react"
 
+interface UserData {
+  userInfo: {
+    email: string;
+    firstName: string;
+    lastName: string;
+  };
+  role: string;
+  tier: string;
+  mockMode: boolean;
+  preferences: {
+    theme: string;
+  };
+}
+
 interface UpdateUserDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  userData: {
-    userInfo: {
-      email: string
-      firstName: string
-      lastName: string
-    }
-    role: string
-    tier: string
-    mockMode: boolean
-    preferences: {
-      theme: string
-    }
-  } | null
-  onSubmit: (data: any) => void
+  userData: UserData | null
+  onSubmit: (data: UserData) => void
 }
 
 export function UpdateUserDialog({

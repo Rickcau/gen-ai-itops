@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
     const url = `${API_BASE_URL}/indexes/embeddings?indexName=${encodeURIComponent(indexName)}`
     console.log('Next.js API Route: Generating embeddings at:', url)
 
-    const response = await fetchFromApi(url, {
+    await fetchFromApi(url, {
       method: 'POST'
     })
     
