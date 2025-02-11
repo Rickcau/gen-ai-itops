@@ -5,7 +5,6 @@ This software is available under a dual license model:
 1. Commercial License for Azure-hosted deployments
    - See [LICENSE.commercial](LICENSE.commercial)
    - Required for any revenue-generating or production use on Azure
-   - Contact rickcau@hotmail.com for exceptions
 
 2. MIT License for open source use
    - See [LICENSE.mit](LICENSE.mit)
