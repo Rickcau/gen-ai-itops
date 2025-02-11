@@ -3,15 +3,15 @@ import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
-import type { Capability } from "@/types/capabilities"
-import { useState } from "react"
-import { X } from "lucide-react"
+import type { Capability, Parameter } from "@/types/capabilities"
+import { useState, useEffect } from "react"
+import { Loader2, Pencil, Plus, X } from "lucide-react"
 
 interface UpdateCapabilityDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  capability: Capability | undefined
-  onSubmit: (data: Capability) => void
+  capability: Capability | null
+  onSubmit?: (data: Capability) => Promise<void>
 }
 
 export function UpdateCapabilityDialog({
@@ -20,17 +20,43 @@ export function UpdateCapabilityDialog({
   capability,
   onSubmit
 }: UpdateCapabilityDialogProps) {
-  const [formData, setFormData] = useState<Capability | null>(capability)
+  const [isEditMode, setIsEditMode] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [formData, setFormData] = useState<Capability | null>(null)
   const [newTag, setNewTag] = useState("")
   const [newParamName, setNewParamName] = useState("")
   const [newParamType, setNewParamType] = useState("")
   const [newParamDescription, setNewParamDescription] = useState("")
 
-  if (!capability) return null
+  useEffect(() => {
+    if (capability) {
+      setFormData(capability)
+      setIsEditMode(false)
+    }
+  }, [capability])
 
-  const handleSubmit = (e: React.FormEvent) => {
+  if (!formData) return null
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    onSubmit(formData)
+    if (!onSubmit || !formData) return
+
+    setIsSubmitting(true)
+    try {
+      await onSubmit(formData)
+      setIsEditMode(false)
+    } catch (error) {
+      console.error('Error updating capability:', error)
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const handleCancel = () => {
+    if (capability) {
+      setFormData(capability)
+      setIsEditMode(false)
+    }
   }
 
   const addTag = () => {
@@ -38,7 +64,7 @@ export function UpdateCapabilityDialog({
       setFormData({
         ...formData,
         tags: [...formData.tags, newTag.trim()]
-      })
+      } as Capability)
       setNewTag("")
     }
   }
@@ -47,19 +73,20 @@ export function UpdateCapabilityDialog({
     setFormData({
       ...formData,
       tags: formData.tags.filter(tag => tag !== tagToRemove)
-    })
+    } as Capability)
   }
 
   const addParameter = () => {
     if (newParamName.trim() && newParamType.trim()) {
+      const newParam: Parameter = {
+        name: newParamName.trim(),
+        type: newParamType.trim(),
+        description: newParamDescription.trim()
+      }
       setFormData({
         ...formData,
-        parameters: [...formData.parameters, {
-          name: newParamName.trim(),
-          type: newParamType.trim(),
-          description: newParamDescription.trim()
-        }]
-      })
+        parameters: [...formData.parameters, newParam]
+      } as Capability)
       setNewParamName("")
       setNewParamType("")
       setNewParamDescription("")
@@ -70,14 +97,34 @@ export function UpdateCapabilityDialog({
     setFormData({
       ...formData,
       parameters: formData.parameters.filter((_, i) => i !== index)
-    })
+    } as Capability)
+  }
+
+  const updateField = <K extends keyof Capability>(field: K, value: Capability[K]) => {
+    setFormData({
+      ...formData,
+      [field]: value
+    } as Capability)
   }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Update Capability</DialogTitle>
+          <DialogTitle>
+            {isEditMode ? 'Edit Capability' : 'View Capability'}
+            {!isEditMode && onSubmit && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="absolute right-12 top-6"
+                onClick={() => setIsEditMode(true)}
+              >
+                <Pencil className="h-4 w-4 mr-2" />
+                Edit
+              </Button>
+            )}
+          </DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="grid gap-6 py-4">
@@ -92,35 +139,53 @@ export function UpdateCapabilityDialog({
           {/* Name Section */}
           <div className="grid gap-2">
             <Label htmlFor="name">Name</Label>
-            <Input
-              id="name"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              required
-            />
+            {isEditMode ? (
+              <Input
+                id="name"
+                value={formData.name}
+                onChange={(e) => updateField('name', e.target.value)}
+                required
+              />
+            ) : (
+              <div className="p-2 rounded-md bg-muted/50">
+                {formData.name}
+              </div>
+            )}
           </div>
 
           {/* Description Section */}
           <div className="grid gap-2">
             <Label htmlFor="description">Description</Label>
-            <Textarea
-              id="description"
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              required
-              className="min-h-[100px]"
-            />
+            {isEditMode ? (
+              <Textarea
+                id="description"
+                value={formData.description}
+                onChange={(e) => updateField('description', e.target.value)}
+                required
+                className="min-h-[100px]"
+              />
+            ) : (
+              <div className="p-2 rounded-md bg-muted/50 whitespace-pre-wrap">
+                {formData.description}
+              </div>
+            )}
           </div>
 
           {/* Type Section */}
           <div className="grid gap-2">
             <Label htmlFor="type">Type</Label>
-            <Input
-              id="type"
-              value={formData.capabilityType}
-              onChange={(e) => setFormData({ ...formData, capabilityType: e.target.value })}
-              required
-            />
+            {isEditMode ? (
+              <Input
+                id="type"
+                value={formData.capabilityType}
+                onChange={(e) => updateField('capabilityType', e.target.value)}
+                required
+              />
+            ) : (
+              <div className="p-2 rounded-md bg-muted/50">
+                {formData.capabilityType}
+              </div>
+            )}
           </div>
 
           {/* Tags Section */}
@@ -143,123 +208,193 @@ export function UpdateCapabilityDialog({
                     className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${colorClass}`}
                   >
                     {tag}
-                    <button
-                      type="button"
-                      onClick={() => removeTag(tag)}
-                      className="ml-1 hover:text-destructive"
-                    >
-                      <X className="h-3 w-3" />
-                    </button>
+                    {isEditMode && (
+                      <button
+                        type="button"
+                        onClick={() => removeTag(tag)}
+                        className="ml-1 hover:text-destructive"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    )}
                   </span>
                 );
               })}
             </div>
-            <div className="flex gap-2">
-              <Input
-                placeholder="Add new tag"
-                value={newTag}
-                onChange={(e) => setNewTag(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
-              />
-              <Button type="button" variant="outline" onClick={addTag}>
-                Add
-              </Button>
-            </div>
+            {isEditMode && (
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Add new tag"
+                  value={newTag}
+                  onChange={(e) => setNewTag(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault()
+                      addTag()
+                    }
+                  }}
+                />
+                <Button type="button" variant="outline" onClick={addTag}>
+                  Add
+                </Button>
+              </div>
+            )}
           </div>
 
           {/* Parameters Section */}
           <div className="grid gap-2">
-            <Label>Parameters</Label>
-            <div className="space-y-2 mb-2">
+            <div className="flex justify-between items-center">
+              <Label>Parameters</Label>
+              {isEditMode && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={addParameter}
+                  className="gap-1"
+                >
+                  <Plus className="h-4 w-4" />
+                  Add Parameter
+                </Button>
+              )}
+            </div>
+            <div className="space-y-2">
               {formData.parameters.map((param, index) => (
                 <div
                   key={index}
                   className="p-2 rounded-md bg-muted/50 grid grid-cols-[1fr_1fr_2fr_auto] gap-2 items-center"
                 >
-                  <span className="text-sm font-medium">{param.name}</span>
-                  <span className="text-sm text-muted-foreground">
-                    Type: {param.type}
-                  </span>
-                  <span className="text-sm text-muted-foreground">
-                    {param.description}
-                  </span>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="text-destructive"
-                    onClick={() => removeParameter(index)}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
+                  {isEditMode ? (
+                    <>
+                      <Input
+                        value={param.name}
+                        onChange={(e) => {
+                          const updatedParams = [...formData.parameters]
+                          updatedParams[index] = { ...param, name: e.target.value }
+                          updateField('parameters', updatedParams)
+                        }}
+                        placeholder="Parameter name"
+                      />
+                      <Input
+                        value={param.type}
+                        onChange={(e) => {
+                          const updatedParams = [...formData.parameters]
+                          updatedParams[index] = { ...param, type: e.target.value }
+                          updateField('parameters', updatedParams)
+                        }}
+                        placeholder="Parameter type"
+                      />
+                      <Input
+                        value={param.description}
+                        onChange={(e) => {
+                          const updatedParams = [...formData.parameters]
+                          updatedParams[index] = { ...param, description: e.target.value }
+                          updateField('parameters', updatedParams)
+                        }}
+                        placeholder="Parameter description"
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="text-destructive"
+                        onClick={() => removeParameter(index)}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <span className="text-sm font-medium">{param.name}</span>
+                      <span className="text-sm text-muted-foreground">
+                        Type: {param.type}
+                      </span>
+                      <span className="text-sm text-muted-foreground">
+                        {param.description}
+                      </span>
+                    </>
+                  )}
                 </div>
               ))}
-            </div>
-            <div className="grid grid-cols-[1fr_1fr_2fr_auto] gap-2">
-              <Input
-                placeholder="Parameter name"
-                value={newParamName}
-                onChange={(e) => setNewParamName(e.target.value)}
-              />
-              <Input
-                placeholder="Parameter type"
-                value={newParamType}
-                onChange={(e) => setNewParamType(e.target.value)}
-              />
-              <Input
-                placeholder="Parameter description"
-                value={newParamDescription}
-                onChange={(e) => setNewParamDescription(e.target.value)}
-              />
-              <Button type="button" variant="outline" onClick={addParameter}>
-                Add
-              </Button>
+              {isEditMode && formData.parameters.length === 0 && (
+                <div className="text-center text-muted-foreground py-4">
+                  No parameters defined. Click &quot;Add Parameter&quot; to add one.
+                </div>
+              )}
             </div>
           </div>
 
           {/* Execution Method Section */}
           <div className="grid gap-2">
             <Label>Execution Method</Label>
-            <div className="grid gap-2">
-              <Input
-                placeholder="Type"
-                value={formData.executionMethod.type}
-                onChange={(e) => setFormData({
-                  ...formData,
-                  executionMethod: {
+            {isEditMode ? (
+              <div className="space-y-2">
+                <Input
+                  placeholder="Type"
+                  value={formData.executionMethod.type}
+                  onChange={(e) => updateField('executionMethod', {
                     ...formData.executionMethod,
                     type: e.target.value
-                  }
-                })}
-                required
-              />
-              <Input
-                placeholder="Details"
-                value={formData.executionMethod.details}
-                onChange={(e) => setFormData({
-                  ...formData,
-                  executionMethod: {
+                  })}
+                  required
+                />
+                <Input
+                  placeholder="Details"
+                  value={formData.executionMethod.details}
+                  onChange={(e) => updateField('executionMethod', {
                     ...formData.executionMethod,
                     details: e.target.value
-                  }
-                })}
-                required
-              />
-            </div>
+                  })}
+                  required
+                />
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <div className="p-2 rounded-md bg-muted/50">
+                  Type: {formData.executionMethod.type}
+                </div>
+                <div className="p-2 rounded-md bg-muted/50">
+                  Details: {formData.executionMethod.details}
+                </div>
+              </div>
+            )}
           </div>
 
-          {/* Submit Button */}
+          {/* Action Buttons */}
           <div className="flex justify-end gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-            >
-              Cancel
-            </Button>
-            <Button type="submit">
-              Update Capability
-            </Button>
+            {isEditMode ? (
+              <>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleCancel}
+                  disabled={isSubmitting}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    'Save Changes'
+                  )}
+                </Button>
+              </>
+            ) : (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => onOpenChange(false)}
+              >
+                Close
+              </Button>
+            )}
           </div>
         </form>
       </DialogContent>

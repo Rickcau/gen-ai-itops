@@ -12,7 +12,7 @@
     "dev:https": "next dev --port 3443 --experimental-https",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint && tsc --noEmit"
   },
   "dependencies": {
     "@azure/cosmos": "^4.0.0",

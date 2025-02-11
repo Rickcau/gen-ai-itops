@@ -49,36 +49,6 @@ export function ChatSidebar({ onSelectChat, onNewChat, userId }: ChatSidebarProp
     setShowDeleteDialog(true)
   }
 
-  const handleDeleteSubmit = async (data: { removeFromStorage: boolean }) => {
-    if (sessionToDelete) {
-      if (data.removeFromStorage) {
-        try {
-          // Call our Next.js API route instead of the backend directly
-          const response = await fetch(`/api/sessions/${sessionToDelete}`, {
-            method: 'DELETE'
-          })
-          
-          // If response is not ok but it's a 404, we should still remove from local storage
-          // as this indicates the session no longer exists in CosmosDB
-          if (!response.ok && response.status !== 404) {
-            console.error('Error deleting session:', response.statusText)
-            return // Only return if it's a real error, not a 404
-          }
-        } catch (err) {
-          console.error('Error deleting session:', err)
-          return // Don't remove from local if server request failed
-        }
-      }
-      
-      // Remove from local list/cache if:
-      // 1. Server delete succeeded OR
-      // 2. Server returned 404 (session doesn't exist) OR
-      // 3. User didn't request server deletion
-      removeSession(sessionToDelete)
-    }
-    setSessionToDelete(null)
-  }
-
   // If no userId is provided, show a message
   if (!userId) {
     return (
@@ -209,7 +179,29 @@ export function ChatSidebar({ onSelectChat, onNewChat, userId }: ChatSidebarProp
       <DeleteSessionDialog
         open={showDeleteDialog}
         onOpenChange={setShowDeleteDialog}
-        onSubmit={handleDeleteSubmit}
+        onConfirm={async (sessionId) => {
+          if (sessionId) {
+            try {
+              const response = await fetch(`/api/sessions/${sessionId}`, {
+                method: 'DELETE'
+              })
+              
+              if (!response.ok && response.status !== 404) {
+                console.error('Error deleting session:', response.statusText)
+                return
+              }
+            } catch (err) {
+              console.error('Error deleting session:', err)
+              return
+            }
+            
+            removeSession(sessionId)
+            setSessionToDelete(null)
+            setShowDeleteDialog(false)
+          }
+        }}
+        isDeleting={false}
+        sessionId={sessionToDelete}
       />
     </>
   )
