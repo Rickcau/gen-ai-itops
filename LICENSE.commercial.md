@@ -1,5 +1,5 @@
-COMMERCIAL LICENSE AGREEMENT
-For Gen-AI-ITOPS
+# COMMERCIAL LICENSE AGREEMENT
+For gen-ai-itops and all parts of this repository 
 
 Effective Date: 2/10/2025
 
@@ -19,14 +19,16 @@ Effective Date: 2/10/2025
 
 2.2 MIT License Activation
 - Software automatically reverts to MIT license **only when**:
-  | Condition                     | Requirement               |
-  |-------------------------------|---------------------------|
-  | Code Availability             | Full source on GitHub     |
-  | Modifications                 | All changes public        |  
-  | Hosting                       | Any cloud/on-prem allowed |
+
+| Condition                     | Requirement               |
+|-------------------------------|---------------------------|
+| Code Availability             | Full source on GitHub     |
+| Modifications                 | All changes public        |  
+| Hosting                       | Any cloud/on-prem allowed |
 
 3. RESTRICTIONS
 3.1 Cloud Provider Limitations
+   
 | Permitted Environments         | Forbidden Environments    |
 |--------------------------------|---------------------------|
 | Azure Global/Government/Stack  | AWS, GCP, Oracle Cloud     |
