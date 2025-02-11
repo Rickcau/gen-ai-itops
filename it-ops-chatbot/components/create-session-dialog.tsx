@@ -35,8 +35,14 @@ export function CreateSessionDialog({
           <DialogTitle>Create New Session</DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="grid gap-4 py-4">
-          <div className="grid gap-2">
+        <div className="pt-4">
+          <p className="text-muted-foreground text-sm">
+            Create a new chat session by providing a user ID and name.
+          </p>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
             <Label htmlFor="userId">User ID</Label>
             <Input
               id="userId"
@@ -47,7 +53,7 @@ export function CreateSessionDialog({
             />
           </div>
 
-          <div className="grid gap-2">
+          <div className="space-y-2">
             <Label htmlFor="name">Session Name</Label>
             <Input
               id="name"
@@ -73,7 +79,7 @@ export function CreateSessionDialog({
             </Button>
             <Button
               type="submit"
-              disabled={isCreating || !userId.trim() || !name.trim()}
+              disabled={isCreating || !userId.trim()}
             >
               {isCreating ? (
                 <>
@@ -81,7 +87,7 @@ export function CreateSessionDialog({
                   Creating...
                 </>
               ) : (
-                'Create'
+                'Create Session'
               )}
             </Button>
           </div>

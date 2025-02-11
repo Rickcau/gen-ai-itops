@@ -1,4 +1,4 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Loader2 } from "lucide-react"
 import type { Capability } from "@/types/capabilities"
@@ -25,14 +25,16 @@ export function DeleteCapabilityDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Delete Capability</DialogTitle>
-          <DialogDescription className="pt-4">
-            Are you sure you want to delete capability <span className="font-medium">{capability.name}</span>?
-            <div className="mt-2 p-4 bg-red-50 dark:bg-red-900/20 rounded-md text-red-800 dark:text-red-200">
-              This action cannot be undone. This will permanently delete the capability
-              and remove all associated data.
-            </div>
-          </DialogDescription>
         </DialogHeader>
+
+        <div className="pt-4">
+          <p>Are you sure you want to delete capability <span className="font-medium">{capability.name}</span>?</p>
+          <div className="mt-2 p-4 bg-red-50 dark:bg-red-900/20 rounded-md text-red-800 dark:text-red-200">
+            This action cannot be undone. This will permanently delete the capability
+            and remove all associated data.
+          </div>
+        </div>
+
         <div className="flex justify-end gap-2">
           <Button
             variant="outline"

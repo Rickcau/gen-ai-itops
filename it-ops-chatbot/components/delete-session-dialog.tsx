@@ -1,21 +1,26 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Loader2 } from "lucide-react"
 
 interface DeleteSessionDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  sessionId: string | null
   onConfirm: (sessionId: string) => Promise<void>
   isDeleting: boolean
+  sessionId: string | null
 }
 
 export function DeleteSessionDialog({
   open,
   onOpenChange,
-  sessionId,
   onConfirm,
-  isDeleting
+  isDeleting,
+  sessionId
 }: DeleteSessionDialogProps) {
   if (!sessionId) return null
 
@@ -24,14 +29,15 @@ export function DeleteSessionDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Delete Session</DialogTitle>
-          <DialogDescription className="pt-4">
-            Are you sure you want to delete session <span className="font-medium font-mono">{sessionId}</span>?
-            <div className="mt-2 p-4 bg-red-50 dark:bg-red-900/20 rounded-md text-red-800 dark:text-red-200">
-              This action cannot be undone. This will permanently delete the session
-              and all its associated messages.
-            </div>
-          </DialogDescription>
         </DialogHeader>
+
+        <div className="pt-4">
+          <p>Are you sure you want to delete this session?</p>
+          <div className="mt-2 p-4 bg-red-50 dark:bg-red-900/20 rounded-md text-red-800 dark:text-red-200">
+            This action cannot be undone.
+          </div>
+        </div>
+
         <div className="flex justify-end gap-2">
           <Button
             variant="outline"
@@ -51,7 +57,7 @@ export function DeleteSessionDialog({
                 Deleting...
               </>
             ) : (
-              'Delete'
+              'Delete Session'
             )}
           </Button>
         </div>

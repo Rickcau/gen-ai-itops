@@ -29,6 +29,8 @@ import { SystemWipeDialog } from '@/components/system-wipe-dialog'
 import { ViewCapabilityDialog } from '@/components/view-capability-dialog'
 import type { Session, SessionMessage, SessionUpdate } from '@/types/session'
 import type { SearchResult, SearchParams } from '@/types/search'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { TestDialog } from "@/components/test-dialog"
 
 interface CollapsibleCardProps {
   title: string
@@ -92,12 +94,6 @@ interface Document {
   embedding?: number[];
 }
 
-interface ApiResponse<T> {
-  data: T;
-  message: string;
-  success: boolean;
-}
-
 // Add a type guard function to check if userId exists and is a string
 const hasUserId = (session: Session): session is Session & { userId: string } => {
   return typeof session.userId === 'string'
@@ -155,6 +151,7 @@ export default function AdminPage() {
   const [isDeletingSession, setIsDeletingSession] = useState(false)
   const [createSessionDialogOpen, setCreateSessionDialogOpen] = useState(false)
   const [isCreatingSession, setIsCreatingSession] = useState(false)
+  const [testDialogOpen, setTestDialogOpen] = useState(false)
 
   // Update the filteredSessions to use the type guard
   const filteredSessions = useMemo(() => {
@@ -196,6 +193,7 @@ export default function AdminPage() {
         throw new Error(errorData || 'Failed to add capability')
       }
 
+      // Just log the response directly without assigning to a variable
       console.log('Frontend: Add successful:', await response.json())
       
       toast({
@@ -338,7 +336,7 @@ export default function AdminPage() {
         throw new Error(errorData || 'Failed to create index');
       }
 
-      const data = await response.json();
+      await response.json(); // Just consume the response
       toast({
         title: "Success",
         description: `Successfully created index: ${indexName}`
@@ -466,11 +464,10 @@ export default function AdminPage() {
         throw new Error(errorData || 'Failed to generate embeddings');
       }
 
-      const data = await response.json();
-      console.log('Embeddings generation response:', data);
+      console.log('Embeddings generation response:', await response.json());
       toast({
         title: "Success",
-        description: data.message || `Successfully generated embeddings for index: ${indexName}`
+        description: `Successfully generated embeddings for index: ${indexName}`
       });
     } catch (error) {
       console.error('Error generating embeddings:', error);
@@ -511,12 +508,12 @@ export default function AdminPage() {
         throw new Error(errorData || 'Failed to search index');
       }
 
-      const data = await response.json();
-      console.log('Search results:', data);
-      setSearchResults(data);
+      const searchResults = await response.json();
+      console.log('Search results:', searchResults);
+      setSearchResults(searchResults);
       toast({
         title: "Success",
-        description: `Found ${data.length} results`
+        description: `Found ${searchResults.length} results`
       });
     } catch (error) {
       console.error('Error searching index:', error);
@@ -738,24 +735,6 @@ export default function AdminPage() {
     }
   }
 
-  const handleViewUser = async (email: string) => {
-    try {
-      const response = await fetch(`/api/users/${encodeURIComponent(email)}`)
-      if (!response.ok) {
-        throw new Error('Failed to fetch user data')
-      }
-      const userData = await response.json()
-      setSelectedUserData(userData)
-      setViewUserDialogOpen(true)
-    } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: error instanceof Error ? error.message : 'Failed to fetch user data'
-      })
-    }
-  }
-
   const handleUpdateUser = async (userData: UserData) => {
     try {
       console.log('Frontend: Starting request to update user:', userData)
@@ -898,40 +877,6 @@ export default function AdminPage() {
         variant: "destructive",
         title: "Error",
         description: error instanceof Error ? error.message : 'Failed to update session'
-      })
-    }
-  }
-
-  const handleAddMessage = async (sessionId: string, message: Omit<SessionMessage, 'id' | 'sessionId' | 'timeStamp'>) => {
-    try {
-      const response = await fetch(`/api/sessions/${encodeURIComponent(sessionId)}/messages`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(message)
-      })
-
-      if (!response.ok) {
-        throw new Error('Failed to add message')
-      }
-
-      const updatedSession = await response.json()
-      setSessions(prevSessions =>
-        prevSessions.map(session =>
-          session.sessionId === sessionId ? updatedSession : session
-        )
-      )
-
-      toast({
-        title: "Success",
-        description: "Message added successfully"
-      })
-    } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: error instanceof Error ? error.message : 'Failed to add message'
       })
     }
   }
@@ -1099,6 +1044,13 @@ export default function AdminPage() {
               ) : (
                 'Refresh'
               )}
+            </Button>
+            <Button
+              onClick={() => setTestDialogOpen(true)}
+              variant="outline"
+              size="sm"
+            >
+              Test Dialog
             </Button>
           </div>
         }
@@ -1293,10 +1245,7 @@ export default function AdminPage() {
                         <Button 
                           variant="destructive"
                           size="sm"
-                          onClick={() => {
-                            console.log('Delete button clicked for index:', indexName);
-                            handleDeleteIndex(indexName);
-                          }}
+                          onClick={() => setIndexToDelete(indexName)}
                           disabled={isLoadingIndexes}
                         >
                           Delete
@@ -1719,6 +1668,11 @@ export default function AdminPage() {
         onOpenChange={setSystemWipeDialogOpen}
         onConfirm={handleSystemWipe}
         isWiping={false}
+      />
+
+      <TestDialog
+        open={testDialogOpen}
+        onOpenChange={setTestDialogOpen}
       />
 
     </div>

@@ -1,4 +1,4 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Loader2 } from "lucide-react"
 
@@ -24,14 +24,16 @@ export function DeleteUserDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Delete User</DialogTitle>
-          <DialogDescription className="pt-4">
-            Are you sure you want to delete user <span className="font-medium">{userEmail}</span>?
-            <div className="mt-2 p-4 bg-red-50 dark:bg-red-900/20 rounded-md text-red-800 dark:text-red-200">
-              This action cannot be undone. This will permanently delete the user
-              and all their history.
-            </div>
-          </DialogDescription>
         </DialogHeader>
+
+        <div className="pt-4">
+          <p>Are you sure you want to delete user <span className="font-medium">{userEmail}</span>?</p>
+          <div className="mt-2 p-4 bg-red-50 dark:bg-red-900/20 rounded-md text-red-800 dark:text-red-200">
+            This action cannot be undone. This will permanently delete the user
+            and all their history.
+          </div>
+        </div>
+
         <div className="flex justify-end gap-2">
           <Button
             variant="outline"

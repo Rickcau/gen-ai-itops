@@ -99,20 +99,20 @@ export function ViewCapabilityDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
-          <div className="flex items-center justify-between pr-8">
-            <DialogTitle>Capability Details</DialogTitle>
+          <DialogTitle>
+            {isEditMode ? 'Edit Capability' : 'View Capability'}
             {!isEditMode && onSubmit && (
               <Button
                 variant="outline"
                 size="sm"
-                className="gap-2"
+                className="absolute right-12 top-6"
                 onClick={() => setIsEditMode(true)}
               >
-                <Pencil className="h-4 w-4" />
+                <Pencil className="h-4 w-4 mr-2" />
                 Edit
               </Button>
             )}
-          </div>
+          </DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="grid gap-6 py-4">

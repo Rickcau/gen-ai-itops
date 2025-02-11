@@ -49,8 +49,8 @@ export async function DELETE(request: NextRequest) {
     const url = `${API_BASE_URL}/indexes?indexName=${encodeURIComponent(indexName)}`
     console.log('Next.js API Route: Deleting index from:', url)
 
-    // Use fetchFromApi just like in GET operation
-    const response = await fetchFromApi(url, {
+    // Use fetchFromApi and await it without assigning to an unused variable
+    await fetchFromApi(url, {
       method: 'DELETE'
     })
     

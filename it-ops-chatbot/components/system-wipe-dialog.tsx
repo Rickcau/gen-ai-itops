@@ -1,4 +1,4 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -25,14 +25,14 @@ export function SystemWipeDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>System Wipe</DialogTitle>
-          <DialogDescription className="pt-4">
-            You are about to delete ALL sessions and their messages from the system.
-            <div className="mt-2 p-4 bg-red-50 dark:bg-red-900/20 rounded-md text-red-800 dark:text-red-200">
-              This is a destructive operation that cannot be undone.
-              Please make sure you have the correct system wipe key before proceeding.
-            </div>
-          </DialogDescription>
         </DialogHeader>
+
+        <div className="pt-4">
+          <p className="text-muted-foreground">
+            This action will permanently delete all data from the system. This includes all users, sessions, capabilities, and indexes.
+            To confirm, please type "WIPE" in the input field below.
+          </p>
+        </div>
 
         <div className="grid gap-4 py-4">
           <div className="grid gap-2">

@@ -1,4 +1,4 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Loader2 } from "lucide-react"
 
@@ -22,14 +22,12 @@ export function GenerateEmbeddingsDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Generate Embeddings</DialogTitle>
-          <DialogDescription className="pt-4">
-            You are about to generate embeddings for index <span className="font-medium">{indexName}</span>.
-            <div className="mt-2 p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-md text-yellow-800 dark:text-yellow-200">
-              This will generate embeddings for all Capabilities and add documents to your vector store. 
-              This process may take a few minutes depending on the amount of data.
-            </div>
-          </DialogDescription>
         </DialogHeader>
+
+        <div className="pt-4">
+          <p>Are you sure you want to generate embeddings for index <span className="font-medium">{indexName}</span>?</p>
+        </div>
+
         <div className="flex justify-end gap-2">
           <Button 
             variant="outline" 
