@@ -20,13 +20,13 @@ export function UpdateCapabilityDialog({
   capability,
   onSubmit
 }: UpdateCapabilityDialogProps) {
-  if (!capability) return null
-
-  const [formData, setFormData] = useState<Capability>(capability)
+  const [formData, setFormData] = useState<Capability | null>(capability)
   const [newTag, setNewTag] = useState("")
   const [newParamName, setNewParamName] = useState("")
   const [newParamType, setNewParamType] = useState("")
   const [newParamDescription, setNewParamDescription] = useState("")
+
+  if (!capability) return null
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()

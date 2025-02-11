@@ -4,25 +4,14 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { useState, useEffect } from "react"
-import { Loader2, Pencil, X } from "lucide-react"
+import { Loader2, Pencil } from "lucide-react"
+import type { UserData } from "@/types/user"
 
 interface ViewUserDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  userData: {
-    userInfo: {
-      email: string
-      firstName: string
-      lastName: string
-    }
-    role: string
-    tier: string
-    mockMode: boolean
-    preferences: {
-      theme: string
-    }
-  } | null
-  onSubmit?: (data: any) => Promise<void>
+  userData: UserData | null
+  onSubmit?: (data: UserData) => Promise<void>
 }
 
 export function ViewUserDialog({

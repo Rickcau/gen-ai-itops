@@ -5,29 +5,13 @@ import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { useState, useEffect } from "react"
 import { Loader2 } from "lucide-react"
+import type { Session, SessionUpdate } from "@/types/session"
 
 interface ViewSessionDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  session: {
-    id: string
-    sessionId: string
-    userId?: string
-    name?: string
-    timestamp: string
-    tokens?: number
-    messages?: Array<{
-      id: string
-      timeStamp: string
-      prompt: string
-      sender: string
-      promptTokens: number
-      completion: string
-      completionTokens: number
-    }>
-  } | null
-  onUpdate?: (sessionId: string, updates: any) => Promise<void>
-  onAddMessage?: (sessionId: string, message: any) => Promise<void>
+  session: Session | null
+  onUpdate?: (sessionId: string, updates: SessionUpdate) => Promise<void>
   onLoadMessages?: (sessionId: string) => Promise<void>
 }
 
@@ -36,14 +20,11 @@ export function ViewSessionDialog({
   onOpenChange,
   session,
   onUpdate,
-  onAddMessage,
   onLoadMessages
 }: ViewSessionDialogProps) {
   const [activeTab, setActiveTab] = useState("details")
   const [isUpdating, setIsUpdating] = useState(false)
   const [editedName, setEditedName] = useState(session?.name || "")
-  const [newMessage, setNewMessage] = useState("")
-  const [isAddingMessage, setIsAddingMessage] = useState(false)
   const [isLoadingMessages, setIsLoadingMessages] = useState(false)
   const [hasLoadedMessages, setHasLoadedMessages] = useState(false)
 
@@ -85,23 +66,6 @@ export function ViewSessionDialog({
       console.error('Error updating session:', error)
     } finally {
       setIsUpdating(false)
-    }
-  }
-
-  const handleAddMessage = async () => {
-    if (!onAddMessage || !newMessage.trim()) return
-    setIsAddingMessage(true)
-    try {
-      await onAddMessage(session.sessionId, {
-        prompt: newMessage,
-        sender: "user"
-      })
-      setNewMessage("")
-      // Success toast handled by parent
-    } catch (error) {
-      console.error('Error adding message:', error)
-    } finally {
-      setIsAddingMessage(false)
     }
   }
 

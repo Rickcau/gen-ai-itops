@@ -306,7 +306,7 @@ export function ViewCapabilityDialog({
               ))}
               {isEditMode && formData.parameters.length === 0 && (
                 <div className="text-center text-muted-foreground py-4">
-                  No parameters defined. Click "Add Parameter" to add one.
+                  No parameters defined. Click &quot;Add Parameter&quot; to add one.
                 </div>
               )}
             </div>

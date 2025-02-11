@@ -3,13 +3,13 @@ import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { useState } from "react"
+import type { UserData } from "@/types/user"
 
 interface CreateUserDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  onSubmit: (data: any) => void
+  onSubmit: (data: UserData) => Promise<void>
 }
 
 export function CreateUserDialog({

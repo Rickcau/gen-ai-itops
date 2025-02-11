@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ThemeToggle } from '@/components/theme-switcher'
-import { ArrowLeft, Settings, Shield, Zap, User, Plus, Database, ChevronDown, ChevronRight, MessageSquare, Loader2, Pencil } from 'lucide-react'
+import { ArrowLeft, Settings, Zap, User, Plus, Database, ChevronDown, ChevronRight, MessageSquare, Loader2 } from 'lucide-react'
 import { CapabilityDialog } from '@/components/capability-dialog'
 import { CreateIndexDialog } from '@/components/create-index-dialog'
 import { DeleteIndexDialog } from '@/components/delete-index-dialog'
@@ -19,7 +19,6 @@ import { SearchIndexDialog } from "@/components/search-index-dialog"
 import { DeleteCapabilityDialog } from '@/components/delete-capability-dialog'
 import { CreateUserDialog } from '@/components/create-user-dialog'
 import { ViewUserDialog } from '@/components/view-user-dialog'
-import { UpdateUserDialog } from '@/components/update-user-dialog'
 import { DeleteUserDialog } from '@/components/delete-user-dialog'
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
@@ -86,6 +85,31 @@ interface SessionData {
     completion: string | null;
     completionTokens: number;
   }>;
+}
+
+interface SearchParams {
+  query: string;
+  k: number;
+  top: number;
+  filter?: string;
+  textOnly: boolean;
+  hybrid: boolean;
+  semantic: boolean;
+  minRerankerScore: number;
+}
+
+interface UserData {
+  userInfo: {
+    email: string;
+    firstName: string;
+    lastName: string;
+  };
+  role: string;
+  tier: string;
+  mockMode: boolean;
+  preferences: {
+    theme: string;
+  };
 }
 
 export default function AdminPage() {
@@ -475,7 +499,7 @@ export default function AdminPage() {
     }
   };
 
-  const handleSearch = async (indexName: string, searchParams: any) => {
+  const handleSearch = async (indexName: string, searchParams: SearchParams) => {
     setIsSearching(true);
     try {
       console.log('Frontend: Starting request to search index:', indexName);
@@ -683,7 +707,7 @@ export default function AdminPage() {
     }
   }
 
-  const handleCreateUser = async (userData: any) => {
+  const handleCreateUser = async (userData: UserData) => {
     try {
       console.log('Frontend: Starting request to create user:', userData)
       const response = await fetch('/api/users', {
@@ -754,7 +778,7 @@ export default function AdminPage() {
     }
   }
 
-  const handleUpdateUser = async (userData: any) => {
+  const handleUpdateUser = async (userData: UserData) => {
     try {
       console.log('Frontend: Starting request to update user:', userData)
       const response = await fetch(`/api/users/${encodeURIComponent(userData.userInfo.email)}`, {
