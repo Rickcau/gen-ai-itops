@@ -4,20 +4,20 @@ For gen-ai-itops and all parts of this repository
 Effective Date: 2/10/2025
 
 1. DEFINITIONS
-- "*Commercial Use*": Deployment in production systems generating revenue, 
+- "**Commercial Use**": Deployment in production systems generating revenue, 
    including SaaS/PaaS offerings, enterprise applications, or paid services
-- "*Azure Hosting*": Deployment via Microsoft Azure services (Virtual Machines, 
+- "**Azure Hosting**": Deployment via Microsoft Azure services (Virtual Machines, 
    App Services, AKS, etc.) with active Azure subscription
-- "*Open Source Use*": Non-production testing, academic research, or community 
+- "**Open Source Use**": Non-production testing, academic research, or community 
    projects sharing all modifications publicly
 
 2. LICENSE GRANTS
-2.1 Commercial License
+2.1 **Commercial License**
 - Conditional grant to use Software in Commercial Use **only if** hosted on Azure
 - Modification rights limited to Azure environments
 - Distribution prohibited except through Azure Marketplace
 
-2.2 MIT License Activation
+2.2 **MIT License Activation**
 - Software automatically reverts to MIT license **only when**:
 
 | Condition                     | Requirement               |
