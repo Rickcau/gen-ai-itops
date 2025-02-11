@@ -3,11 +3,11 @@ name: Next.js CI
 on:
   workflow_dispatch:
   push:
-    branches: '*'
+    branches: '**'
     paths:
       - 'it-ops-chatbot/**'
   pull_request:
-    branches: '*'
+    branches: '**'
     paths:
       - 'it-ops-chatbot/**'
 
