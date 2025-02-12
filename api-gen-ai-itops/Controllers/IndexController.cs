@@ -22,15 +22,18 @@ namespace api_gen_ai_itops.Controllers
     [Route("indexes")]
     public class IndexesController : ControllerBase
     {
+        private readonly ILogger<IndexesController> _logger;
         private readonly AISearchHelper _aiSearchHelper;
         private readonly Configuration _configuration;
         private readonly SearchIndexClient _indexClient;
         private readonly TokenCredential _credential;
         private readonly AzureOpenAIClient _azureOpenAIClient;
+        private readonly string _indexVersion;
         private readonly Azure.Search.Documents.SearchClient _searchClient;
 
-        public IndexesController(Configuration configuration, TokenCredential credential)
+        public IndexesController(ILogger<IndexesController> logger, Configuration configuration, TokenCredential credential)
         {
+            _logger = logger;
             _credential = credential ?? throw new ArgumentNullException(nameof(credential));
             _configuration = configuration;
             _aiSearchHelper = new AISearchHelper();
@@ -38,6 +41,7 @@ namespace api_gen_ai_itops.Controllers
             _azureOpenAIClient = _aiSearchHelper.InitializeOpenAIClient(configuration, _credential);
             _indexClient = _aiSearchHelper.InitializeSearchIndexClient(configuration, _credential);
             _searchClient = _indexClient.GetSearchClient(configuration.IndexName);
+            _indexVersion = configuration.IndexVersion ?? "V1";
         }
 
         // GET: api/indexes
@@ -112,22 +116,14 @@ namespace api_gen_ai_itops.Controllers
             }
         }
 
+
+        /// <summary>
+        /// This is the function / operation that is used to search for capabilities
+        /// </summary>
+        /// <param name="indexName"></param>
+        /// <param name="request"></param>
+        /// <returns>List&lt;Capability&gt;</returns>
         [HttpPost("capabilities/search")]
-        /// <remarks>
-        /// Sample request:
-        ///
-        ///     POST /indexes/capabilities/search
-        ///     {
-        ///         "query": "sample query",
-        ///         "k": 3,
-        ///         "top": 10,
-        ///         "filter": null,
-        ///         "textOnly": false,
-        ///         "hybrid": true,
-        ///         "semantic": false,
-        ///         "minRerankerScore": 2.0
-        ///     }
-        /// </remarks>
         [SwaggerOperation(
             Summary = "Search capabilities index",
             Description = "Performs hybrid search against capabilities index including vector, text, and semantic search")]
@@ -140,18 +136,37 @@ namespace api_gen_ai_itops.Controllers
         {
             try
             {
-                var searchClient = _indexClient.GetSearchClient(indexName);
-                var results = await _aiSearchHelper.SearchCapabilities(
-                    searchClient,
-                    request.Query,
-                    request.K,
-                    request.Top,
-                    request.Filter,
-                    request.TextOnly,
-                    request.Hybrid,
-                    request.Semantic,
-                    request.MinRerankerScore);
-                return Ok(results);
+                // Need to check which veriosn of the Index is being used.
+
+                if (_indexVersion == "V1") {
+                    _logger.LogInformation("V1 Index is being used!!!");
+                    var searchClientV1 = _indexClient.GetSearchClient(indexName);
+                    var resultsV1 = await _aiSearchHelper.SearchV1(
+                        searchClientV1,
+                        request.Query,
+                        request.K,
+                        request.Top,
+                        request.Filter,
+                        request.TextOnly,
+                        request.Hybrid,
+                        request.Semantic);
+                    return Ok(resultsV1);
+                }
+                // if it's not a V1 index then perform the search against the V2 index
+                _logger.LogInformation("V2 Index is being used!!!");
+                var searchClientV2 = _indexClient.GetSearchClient(indexName);
+                var resultsV2 = await _aiSearchHelper.SearchCapabilities(
+                        searchClientV2,
+                        request.Query,
+                        request.K,
+                        request.Top,
+                        request.Filter,
+                        request.TextOnly,
+                        request.Hybrid,
+                        request.Semantic,
+                        request.MinRerankerScore);
+                return Ok(resultsV2);
+
             }
             catch (Exception ex)
             {
