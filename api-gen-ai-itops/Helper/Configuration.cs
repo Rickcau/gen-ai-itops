@@ -50,6 +50,13 @@ namespace Helper.AzureOpenAISearchConfiguration
         public string? IndexName { get; set; }
 
         /// <summary>
+        /// Index name in the search service
+        /// e.g. sample-index
+        /// </summary>
+        [ConfigurationKeyName("AZURE_SEARCH_INDEX_VERSION")]
+        public string? IndexVersion { get; set; }
+
+        /// <summary>
         /// Admin API key for search service
         /// Optional, if not specified attempt to use DefaultAzureCredential
         /// </summary>

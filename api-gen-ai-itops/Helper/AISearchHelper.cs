@@ -24,6 +24,7 @@ namespace Helper.AzureOpenAISearchHelper
     public class AISearchHelper
     {
         private readonly ILogger<AISearchHelper> _logger;
+        private string _indexVersion;
 
         public AISearchHelper(ILogger<AISearchHelper>? logger = null)
         {
@@ -36,6 +37,8 @@ namespace Helper.AzureOpenAISearchHelper
             {
                 return new AzureOpenAIClient(new Uri(configuration.AzureOpenAIEndpoint!), new AzureKeyCredential(configuration.AzureOpenAIApiKey));
             }
+            _logger.LogInformation($"Index: {configuration.IndexVersion} is being used!");
+            _indexVersion = configuration.IndexVersion!;
 
             return new AzureOpenAIClient(new Uri(configuration.AzureOpenAIEndpoint!), credential);
         }
@@ -205,11 +208,11 @@ SemanticConfigurations = index.SemanticSearch?.Configurations?.Select(c => c.Nam
         }
 
         public async Task<List<Capability>> ListCapabilityDocumentsAsync(
-    string indexName,
-    SearchClient searchClient2,
-    SearchIndexClient indexClient,
-    bool suppressVectorFields = true,
-    int maxResults = 1000)
+            string indexName,
+            SearchClient searchClient2,
+            SearchIndexClient indexClient,
+            bool suppressVectorFields = true,
+            int maxResults = 1000)
         {
             try
             {
@@ -496,6 +499,15 @@ SemanticConfigurations = index.SemanticSearch?.Configurations?.Select(c => c.Nam
             await bufferedSender.FlushAsync();
         }
 
+        /// <summary>
+        /// This function is used for the V1 version of the index to load the index with data
+        /// </summary>
+        /// <param name="configuration"></param>
+        /// <param name="azureOpenAIClient"></param>
+        /// <param name="searchClient"></param>
+        /// <param name="jsonFilePath"></param>
+        /// <returns></returns>
+        /// <exception cref="ArgumentNullException"></exception>
         public async Task GenerateAndSaveRunBookDocumentsAsync(Configuration configuration, AzureOpenAIClient azureOpenAIClient, SearchClient searchClient, string jsonFilePath)
         {
             var runbooks = LoadRunbooksFromJson(jsonFilePath);
@@ -541,6 +553,14 @@ SemanticConfigurations = index.SemanticSearch?.Configurations?.Select(c => c.Nam
             _logger.LogDebug("Index documents result: {Result}", result.ToString());
         }
 
+        /// <summary>
+        /// This function is used with the V2 version of the index using data that is stored in CosmosDB
+        /// </summary>
+        /// <param name="configuration"></param>
+        /// <param name="azureOpenAIClient"></param>
+        /// <param name="cosmosDbService"></param>
+        /// <param name="searchClient"></param>
+        /// <returns></returns>
         public async Task GenerateCapabilityEmbeddingsForSearchAsync(
             Configuration configuration,
             AzureOpenAIClient azureOpenAIClient,
@@ -598,6 +618,11 @@ SemanticConfigurations = index.SemanticSearch?.Configurations?.Select(c => c.Nam
             }
         }
 
+        /// <summary>
+        /// This function is used with the V1 version of the index and is used to load runbook details from JSON
+        /// </summary>
+        /// <param name="jsonFilePath"></param>
+        /// <returns></returns>
         private List<RunbookData> LoadRunbooksFromJson(string jsonFilePath)
         {
             var jsonContent = File.ReadAllText(jsonFilePath);
@@ -612,7 +637,22 @@ SemanticConfigurations = index.SemanticSearch?.Configurations?.Select(c => c.Nam
             return JsonSerializer.Deserialize<List<RunbookData>>(jsonContent, options) ?? new List<RunbookData>();
         }
 
-        public async Task<List<RunbookDetails>> Search(SearchClient searchClient, string query, int k = 3, int top = 10, string? filter = null, bool textOnly = false, bool exhaustive = false, bool hybrid = false, bool semantic = false, string debug = "disabled", double minRerankerScore = 2.0)
+        /// <summary>
+        /// This function is the Search function that should be used with the V1 verison of the index
+        /// </summary>
+        /// <param name="searchClient"></param>
+        /// <param name="query"></param>
+        /// <param name="k"></param>
+        /// <param name="top"></param>
+        /// <param name="filter"></param>
+        /// <param name="textOnly"></param>
+        /// <param name="exhaustive"></param>
+        /// <param name="hybrid"></param>
+        /// <param name="semantic"></param>
+        /// <param name="debug"></param>
+        /// <param name="minRerankerScore"></param>
+        /// <returns></returns>
+        public async Task<List<RunbookDetails>> SearchV1(SearchClient searchClient, string query, int k = 3, int top = 10, string? filter = null, bool textOnly = false, bool exhaustive = false, bool hybrid = false, bool semantic = false, string debug = "disabled", double minRerankerScore = 2.0)
         {
             var searchOptions = new SearchOptions
             {
@@ -705,6 +745,19 @@ SemanticConfigurations = index.SemanticSearch?.Configurations?.Select(c => c.Nam
             return runbookDetailsList;
         }
 
+        /// <summary>
+        /// This function is used to search the V2 index for Capabilities it returns a List of Capabilities
+        /// </summary>
+        /// <param name="searchClient"></param>
+        /// <param name="query"></param>
+        /// <param name="k"></param>
+        /// <param name="top"></param>
+        /// <param name="filter"></param>
+        /// <param name="textOnly"></param>
+        /// <param name="hybrid"></param>
+        /// <param name="semantic"></param>
+        /// <param name="minRerankerScore"></param>
+        /// <returns>List&lt;Capability&gt;</returns>
         public async Task<List<Capability>> SearchCapabilities(
             SearchClient searchClient,
             string query,
@@ -799,6 +852,131 @@ SemanticConfigurations = index.SemanticSearch?.Configurations?.Select(c => c.Nam
                                     ? JsonSerializer.Deserialize<List<Parameter>>(paramStr) ?? new List<Parameter>()
                                     : new List<Parameter>(),
                                                     ExecutionMethod = result.Document["executionMethod"]?.ToString() is string execStr
+                                    ? JsonSerializer.Deserialize<ExecutionMethod>(execStr) ?? new ExecutionMethod()
+                                    : new ExecutionMethod()
+                    };
+
+
+                    capabilities.Add(capability);
+
+                    _logger.LogDebug("Search Result - Name: {Name}, Score: {Score}, RerankerScore: {RerankerScore}",
+                        capability.Name,
+                        result.Score,
+                        result.SemanticSearch?.RerankerScore);
+                }
+            }
+
+            _logger.LogDebug("Total Results: {Count}", capabilities.Count);
+            return capabilities;
+        }
+
+        /// <summary>
+        /// This function is used to search the V2 index for Capabilities it returns a List of Capabilities
+        /// </summary>
+        /// <param name="searchClient"></param>
+        /// <param name="query"></param>
+        /// <param name="k"></param>
+        /// <param name="top"></param>
+        /// <param name="filter"></param>
+        /// <param name="textOnly"></param>
+        /// <param name="hybrid"></param>
+        /// <param name="semantic"></param>
+        /// <param name="minRerankerScore"></param>
+        /// <returns>List&lt;Capability&gt;</returns>
+        public async Task<List<Capability>> SearchCapabilitiesV2(
+            SearchClient searchClient,
+            string query,
+            int k = 3,
+            int top = 10,
+            string? filter = null,
+            bool textOnly = false,
+            bool hybrid = true,
+            bool semantic = false,
+            double minRerankerScore = 2.0)
+        {
+            var searchOptions = new SearchOptions
+            {
+                Filter = filter,
+                Size = top,
+                Select = { "id", "name", "description", "capabilityType", "tags", "parameters", "executionMethod" },
+                IncludeTotalCount = true
+            };
+
+            if (!textOnly)
+            {
+                searchOptions.VectorSearch = new()
+                {
+                    Queries = {
+                new VectorizableTextQuery(text: query)
+                {
+                    KNearestNeighborsCount = k,
+                    Fields = { "descriptionVector" }
+                }
+            }
+                };
+            }
+
+            //if (semantic)
+            //{
+            //    searchOptions.QueryType = SearchQueryType.Semantic;
+            //    searchOptions.SemanticSearch = new SemanticSearchOptions
+            //    {
+            //        SemanticConfigurationName = "my-semantic-config",
+            //        QueryCaption = new QueryCaption(QueryCaptionType.Extractive)
+            //    };
+            //}
+
+            if (hybrid || semantic)
+            {
+                searchOptions.QueryType = SearchQueryType.Semantic;
+                searchOptions.SemanticSearch = new SemanticSearchOptions
+                {
+                    SemanticConfigurationName = "my-semantic-config",
+                    QueryCaption = new QueryCaption(QueryCaptionType.Extractive),
+                    QueryAnswer = new QueryAnswer(QueryAnswerType.Extractive),
+                };
+            }
+
+            string? queryText = (textOnly || hybrid || semantic) ? query : null;
+            SearchResults<SearchDocument> response = await searchClient.SearchAsync<SearchDocument>(queryText, searchOptions);
+
+            var capabilities = new List<Capability>();
+            await foreach (var result in response.GetResultsAsync())
+            {
+                // Use RerankerScore if available; otherwise, fallback to Score for filtering
+                double? relevanceScore = result.SemanticSearch?.RerankerScore ?? result.Score;
+
+                double adjustedMinRerankerScore = textOnly ? 0.03 : minRerankerScore;
+
+                //if (result.SemanticSearch?.RerankerScore >= minRerankerScore)
+                //{
+                if (relevanceScore >= adjustedMinRerankerScore)
+                {
+                    //Capability capability = new Capability
+                    //{
+                    //    Id = (string)result.Document["id"],
+                    //    Name = (string)result.Document["name"],
+                    //    Description = (string)result.Document["description"],
+                    //    CapabilityType = (string)result.Document["capabilityType"],
+                    //    Tags = ((string[])result.Document["tags"]).ToList(),
+                    //    Parameters = result.Document["parameters"]?.ToString() is string paramStr ?
+                    //        JsonSerializer.Deserialize<List<Parameter>>(paramStr) ?? new List<Parameter>() : new List<Parameter>(),
+                    //    ExecutionMethod = result.Document["executionMethod"]?.ToString() is string execStr ?
+                    //        JsonSerializer.Deserialize<ExecutionMethod>(execStr) ?? new ExecutionMethod() : new ExecutionMethod()
+                    //};
+                    Capability capability = new Capability
+                    {
+                        Id = (string)result.Document["id"],
+                        Name = (string)result.Document["name"],
+                        Description = (string)result.Document["description"],
+                        CapabilityType = (string)result.Document["capabilityType"],
+                        Tags = result.Document["tags"] is IEnumerable<object> tagObjects
+                                    ? tagObjects.Select(tag => tag.ToString() ?? "").ToList()
+                                    : new List<string>(),
+                        Parameters = result.Document["parameters"]?.ToString() is string paramStr
+                                    ? JsonSerializer.Deserialize<List<Parameter>>(paramStr) ?? new List<Parameter>()
+                                    : new List<Parameter>(),
+                        ExecutionMethod = result.Document["executionMethod"]?.ToString() is string execStr
                                     ? JsonSerializer.Deserialize<ExecutionMethod>(execStr) ?? new ExecutionMethod()
                                     : new ExecutionMethod()
                     };
