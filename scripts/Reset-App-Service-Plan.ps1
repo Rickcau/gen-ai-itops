@@ -2,15 +2,15 @@
 # Just another example of an IT Operation.
 # .\Reset-App-Service-Plan.ps1 -ResourceGroupName "MyRG" -AppServicePlanName "AppService1" -SubscriptionId "dkjdlkfjdlk53456345"
 
+# Reset AppServiecPlan to Premium V3
+# Just another example of an IT Operation.
+# .\Reset-App-Service-Plan.ps1 -ResourceGroupName "MyRG" -AppServicePlanName "AppService1"
 param(
     [Parameter(Mandatory=$true)]
     [string]$ResourceGroupName,
     
     [Parameter(Mandatory=$true)]
-    [string]$AppServicePlanName,
-    
-    [Parameter(Mandatory=$true)]
-    [string]$SubscriptionId
+    [string]$AppServicePlanName
 )
 
 function Write-LogMessage {
@@ -19,7 +19,6 @@ function Write-LogMessage {
         [string]$Level = "Information"
     )
     $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-    # Use Write-Output for immediate visibility
     Write-Output "[$timestamp][$Level] $Message"
 }
 
@@ -28,9 +27,9 @@ try {
     Write-LogMessage "Connecting to Azure using Managed Identity..."
     Connect-AzAccount -Identity | Out-Null
     
-    # Set the subscription context
-    Write-LogMessage "Setting subscription context to: $SubscriptionId"
-    Set-AzContext -SubscriptionId $SubscriptionId | Out-Null
+    # Get current context and subscription
+    $context = Get-AzContext
+    Write-LogMessage "Connected to subscription: $($context.Subscription.Name)"
     
     # Get the current App Service Plan
     Write-LogMessage "Retrieving App Service Plan: $AppServicePlanName in resource group: $ResourceGroupName"
@@ -40,7 +39,6 @@ try {
         Write-LogMessage "App Service Plan not found" "Error"
         throw "App Service Plan '$AppServicePlanName' not found in resource group '$ResourceGroupName'"
     }
-
     Write-LogMessage "Current App Service Plan tier: $($asp.Sku.Tier), Size: $($asp.Sku.Name)"
     
     # Check if current tier is lower than Premium V3
