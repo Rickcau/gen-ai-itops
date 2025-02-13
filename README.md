@@ -4,6 +4,9 @@
 [![Next.js CI](https://github.com/Rickcau/gen-ai-itops/actions/workflows/nextjs-ci.yml/badge.svg)](https://github.com/Rickcau/gen-ai-itops/actions/workflows/nextjs-ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
+[![Video Title](thumbnail-image-url.jpg)](https://www.youtube.com/watch?v=YOUR_VIDEO_ID)
+
+
 ## Licensing 
 This project uses a dual license model:
 
