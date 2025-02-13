@@ -1,5 +1,6 @@
 # Reset AppServiecPlan to Premium V3
 # Just another example of an IT Operation.
+# .\Reset-App-Service-Plan.ps1 -ResourceGroupName "MyRG" -AppServicePlanName "AppService1" -SubscriptionId "dkjdlkfjdlk53456345"
 
 param(
     [Parameter(Mandatory=$true)]
