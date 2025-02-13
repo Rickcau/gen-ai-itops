@@ -6,7 +6,7 @@
 
 [![Video Title](./images/demo.jpg)](https://www.youtube.com/watch?v=huwIEobrw7w)
 
-[<img src="./images/demo.jpg" alt="Video Title" width="400"/>](https://www.youtube.com/watch?v=huwIEobrw7w)
+[<img src="./images/demo.jpg" alt="Video Title" width="850"/>](https://www.youtube.com/watch?v=huwIEobrw7w)
 
 
 
