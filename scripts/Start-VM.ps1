@@ -3,6 +3,7 @@
 # It uses the Automation Account's Managed Identity for authentication and includes validation and error handling. 
 # The script checks the VM's existence and current power state before attempting to start it.
 # Streams the results to the output window.
+# .\Start-VM.ps1 -VMName "smt-windows-vm" -ResourceGroupName "MyRG"
 
 param(
     [Parameter(Mandatory = $true)]
