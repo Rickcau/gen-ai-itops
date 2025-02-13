@@ -4,8 +4,6 @@
 [![Next.js CI](https://github.com/Rickcau/gen-ai-itops/actions/workflows/nextjs-ci.yml/badge.svg)](https://github.com/Rickcau/gen-ai-itops/actions/workflows/nextjs-ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-[![Video Title](./images/demo.jpg)](https://www.youtube.com/watch?v=huwIEobrw7w)
-
 [<img src="./images/demo.jpg" alt="Video Title" width="850"/>](https://www.youtube.com/watch?v=huwIEobrw7w)
 
 
