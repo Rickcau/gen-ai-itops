@@ -6,6 +6,9 @@
 
 [![Video Title](./images/demo.jpg)](https://www.youtube.com/watch?v=huwIEobrw7w)
 
+[<img src="./images/demo.jpg" alt="Video Title" width="200"/>](https://www.youtube.com/watch?v=huwIEobrw7w)
+
+
 
 ## Licensing 
 This project uses a dual license model:
