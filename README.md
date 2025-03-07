@@ -4,7 +4,7 @@
 [![Next.js CI](https://github.com/Rickcau/gen-ai-itops/actions/workflows/nextjs-ci.yml/badge.svg)](https://github.com/Rickcau/gen-ai-itops/actions/workflows/nextjs-ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-**Click on the image below to watch a demostration of this soltion in real-time.**
+***Click on the image below to watch a demostration of this soltion in real-time.***
 [<img src="./images/demo.jpg" alt="Video Title" width="850"/>](https://www.youtube.com/watch?v=huwIEobrw7w)
 
 
