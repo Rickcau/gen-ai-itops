@@ -20,7 +20,7 @@ See [LICENSE.md](LICENSE.md) for details.
 ## Risk Assessment
 Please review the risk assessment in-which I compare the capabilitiy based approach I leverage in this repository against screen/browswer controlled appraoches (like OpenAI's Operator, Anthropic's Computer Use, and Google's Project Mariner).
 
-[Risk Assessment](./notes/riskassessment.md)
+[Risk Assessment](./notes/risk-assessment.md)
 
 ## Overview
 This repository contains a comprehensive solution for automating IT operations using Generative AI, Azure Automation, GitHub Workflows, and modern web technologies. The platform enables users to interact with IT infrastructure through a natural language interface while maintaining proper security controls and role-based access.
