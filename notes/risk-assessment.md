@@ -5,7 +5,7 @@
 
 ## Executive Summary
 
-This document assesses the risks and benefits of different approaches to implementing AI-assisted IT Operations management for cloud resources, with a particular focus on Azure environments. We compare capability-based approaches that utilize registered functions and APIs against screen/browser control approaches (like OpenAI's Operator, Anthropic's Computer Use, and Google's Project Mariner). Our findings indicate that capability-based approaches offer superior security, auditability, and reliability for enterprise IT operations environments.
+This document assesses the risks and benefits of different approaches to implementing AI-assisted IT Operations management for cloud resources, with a particular focus on Azure environments. I compare capability-based approaches that utilize registered functions and APIs against screen/browser control approaches (like OpenAI's Operator, Anthropic's Computer Use, and Google's Project Mariner). Our findings indicate that capability-based approaches offer superior security, auditability, and reliability for enterprise IT operations environments.
 
 ## Approach Comparison
 
@@ -118,4 +118,4 @@ This document assesses the risks and benefits of different approaches to impleme
 
 While screen control approaches like OpenAI Operator, Anthropic Computer Use, and Google Project Mariner offer enticing simplicity and flexibility, they introduce significant risks when applied to IT operations management. The capability-based approach demonstrated in the Gen-AI-ITOps repository provides a more robust, secure, and auditable framework that aligns with enterprise security requirements and best practices.
 
-For organizations seeking to implement AI-assisted IT operations, we strongly recommend focusing on capability-based implementations that leverage official APIs and well-defined operation boundaries rather than screen control mechanisms.
+For organizations seeking to implement AI-assisted IT operations, I strongly recommend focusing on capability-based implementations that leverage official APIs and well-defined operation boundaries rather than screen control mechanisms.
